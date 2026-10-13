@@ -1,0 +1,11 @@
+work/
+.venv/
+__pycache__/
+*.pyc
+processor*/
+log.*
+*.vtk
+*.vtp
+*.stl
+*.step
+postProcessing/
