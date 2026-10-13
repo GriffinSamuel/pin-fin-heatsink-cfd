@@ -10,7 +10,7 @@ ok=0; for t in $(seq 1 40); do ok=1;
   [ "$(tr -d '\r' < $SRC/src/studies.py | md5sum | cut -d' ' -f1)" = "7afd38c2125d51450abb494ce980afa0" ] || ok=0
   [ "$(tr -d '\r' < $SRC/src/surrogate.py | md5sum | cut -d' ' -f1)" = "b8f5f70bdf7bf871e7a8d65b1b981ac9" ] || ok=0
   [ "$(tr -d '\r' < $SRC/src/sweep.py | md5sum | cut -d' ' -f1)" = "93b8c9b885846f3dbd6ce5d1398c4ef5" ] || ok=0
-  [ "$(tr -d '\r' < $SRC/src/visuals.py | md5sum | cut -d' ' -f1)" = "e63944ddfe7a64c0745c7bf9826fffc8" ] || ok=0
+  [ "$(tr -d '\r' < $SRC/src/visuals.py | md5sum | cut -d' ' -f1)" = "847d57eb72157e57ec3a6427fcd3c9d7" ] || ok=0
   [ $ok = 1 ] && break; sleep 5; done
 [ $ok = 1 ] || { echo "SOURCES STALE - aborting"; exit 3; }
 cd $HOME/heatsink-cfd || exit 1
@@ -25,4 +25,9 @@ for k,b in r.items():
     m=b["internalMesh"]
     print(k,"point:",list(m.point_data.keys()),"cell:",list(m.cell_data.keys()))
 PY
-echo "diag done"
+mkdir -p figures
+for c in work/sweep/d2_pd1.8_h35_staggered_V4_coarse work/sweep/d4_pd2.8_h20_inline_V4_coarse $(ls -d work/custom/*d3.7_pd1.8_h35_inline* | head -1); do
+  echo "== render $c"; xvfb-run -a .venv/bin/python -m src.visuals --case $c --out figures 2>&1 | grep -v includeEtc | tail -10
+done
+mkdir -p "$SRC/results/T9b"; cp -r figures "$SRC/results/T9b/"; ls -la figures | head -40
+echo "visuals job done"
