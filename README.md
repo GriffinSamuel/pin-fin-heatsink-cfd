@@ -25,9 +25,10 @@ surrogate model's optimum, confirmed with its own CFD run.*
 
 ## What is and is not established
 
-- **Mesh independence is not demonstrated.** Coarse to medium changes R by 3.7 % and dP by 25 %; the fine
-  mesh (7.6 M fluid cells) could not be meshed on this laptop. Rankings and trends are the supported
-  result; absolute pressure drops are +/- 30 %. See `docs/mesh_study.md`.
+- **Mesh independence is not demonstrated.** For the centre design, coarse to medium changes R by 3.7 % and
+  dP by 25 %; the fine mesh (7.6 M fluid cells) could not be meshed on this laptop. Three more designs re-run on
+  the medium mesh moved dP by -4 to -24 % and R by -1 to -11 % (the sparsest array moved most in R), so the
+  coarse sweep's trends are supported but its absolute values are +/- 30 %. See `docs/mesh_study.md`.
 - The sweep ran on the coarse mesh with 600 iterations per case; 13 of the 36 4 m/s cases still have
   a pressure residual above 1e-3 (temperature is converged in all).
 - On the stitched pin/base interface the omega wall function diverged, so that patch uses a zero-gradient

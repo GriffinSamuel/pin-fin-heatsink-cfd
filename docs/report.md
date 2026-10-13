@@ -61,9 +61,17 @@ Centre design (d = 3 mm, p/d = 2.2, h = 35 mm, staggered) at 4 m/s on three mesh
 
 Thermal resistance changes 3.7 % from coarse to medium; pressure drop changes 25 %. The
 fine mesh could not be run on this laptop, so mesh independence is **not demonstrated**: the
-plan's medium-to-fine criterion (< 3 %) is not met. R is close to mesh-insensitive; dP is
-not converged (medium is 31 % below the correlation). The 36-design sweep therefore ran on
-the coarse mesh, and its absolute dP values should be read as +/- 30 %. {{MEDIUM}}
+plan's medium-to-fine criterion (< 3 %) is not met. dP is not converged (medium is 31 % below the correlation for the centre design) and R is only
+mesh-insensitive for dense arrays (see below). The 36-design sweep therefore ran on
+the coarse mesh, and its absolute dP values should be read as +/- 30 %. Three more designs were re-run on the medium mesh (about 45 minutes each, same 600 iterations) to see how the coarse-mesh results shift:
+
+| design (4 m/s) | R coarse | R medium | change | dP coarse Pa | dP medium Pa | change | dP hand Pa |
+|---|---|---|---|---|---|---|---|
+| d3.7, pd1.8, h35, inline | 0.340 | 0.336 | -1.2 % | 153 | 116 | -24.2 % | 131 |
+| d3, pd2.2, h35, inline | 0.418 | 0.407 | -2.6 % | 85 | 66 | -22.2 % | 64 |
+| d4, pd2.8, h35, inline | 0.796 | 0.707 | -11.1 % | 24 | 23 | -4.3 % | 22 |
+
+The offset is **not uniform**. For the two denser arrays the medium mesh gives 22-24 % lower dP and 1-3 % lower R, and the medium dP lands close to the hand calculation (66 vs 64 Pa, 116 vs 131 Pa). For the sparsest array dP barely moves (-4 %) but R drops 11 %, so the coarse mesh over-predicts the resistance of sparse, large-pin designs. The ordering of these three designs is the same on both meshes, but the coarse sweep slightly understates how good sparse designs are and overstates the pressure drop of dense ones, so the Pareto front would shift somewhat on a finer mesh.
 
 ## 4. Validation against hand calculations
 
