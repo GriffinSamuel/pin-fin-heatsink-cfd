@@ -23,21 +23,22 @@ T_IN = 298.15
 
 
 def load_case(case: str):
-    foam = os.path.join(case, "case.foam")
-    open(foam, "a").close()
-    r = pv.OpenFOAMReader(foam)
-    times = list(r.time_values)
-    if times:
-        r.set_active_time_value(times[-1])
-    r.enable_all_patch_arrays()
-    r.cell_to_point_creation = True
-    mb = r.read()
-    regions = {}
-    for i in range(mb.n_blocks):
-        name = mb.get_block_name(i)
-        blk = mb[i]
-        if isinstance(blk, pv.MultiBlock) and blk.n_blocks and blk.get_block_name(0) == "internalMesh":
-            regions[name] = blk
+    """Read the latest time of every region. The vtk OpenFOAM reader cannot handle these two-region cases
+    (it reads zero cells for the second region), so foamToVTK writes each region's internal mesh and
+    pyvista reads that."""
+    import subprocess
+    regions, times = {}, []
+    for name in ("fluid", "solid"):
+        vtk_dir = os.path.join(case, "VTK", name)
+        files = sorted(f for f in glob.glob(os.path.join(vtk_dir, "*_*.vtk")) if os.path.dirname(f) == vtk_dir)
+        if not files:
+            subprocess.run(["foamToVTK", "-region", name, "-latestTime", "-noPointValues"], cwd=case, check=True,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            files = sorted(f for f in glob.glob(os.path.join(vtk_dir, "*_*.vtk")) if os.path.dirname(f) == vtk_dir)
+        mesh = pv.read(files[-1])
+        mesh = mesh.cell_data_to_point_data(pass_cell_data=True)
+        regions[name] = {"internalMesh": mesh}
+        times.append(os.path.basename(files[-1]))
     return regions, times
 
 
