@@ -1,0 +1,146 @@
+[04:05:04] 36 cases, mesh=coarse, np=8, 1 at a time
+[04:05:56] mesh  d2_pd1.8_h20_inline_V4_coarse
+[04:10:12] solve d2_pd1.8_h20_inline_V4_coarse
+[04:14:40] done  d2_pd1.8_h20_inline_V4_coarse: ok T_max=331.781298 dP=659.3469999999943 in 9.6 min
+[04:14:40] csv updated (1 rows)
+[04:15:38] mesh  d2_pd1.8_h20_staggered_V4_coarse
+[04:19:49] solve d2_pd1.8_h20_staggered_V4_coarse
+[04:24:15] done  d2_pd1.8_h20_staggered_V4_coarse: ok T_max=331.246625 dP=781.1570999999967 in 9.6 min
+[04:24:15] csv updated (2 rows)
+[04:25:07] mesh  d2_pd1.8_h35_inline_V4_coarse
+[04:32:03] solve d2_pd1.8_h35_inline_V4_coarse
+[04:40:23] done  d2_pd1.8_h35_inline_V4_coarse: ok T_max=325.931087 dP=563.2799999999988 in 16.1 min
+[04:40:23] csv updated (3 rows)
+[04:41:22] mesh  d2_pd1.8_h35_staggered_V4_coarse
+[04:48:23] solve d2_pd1.8_h35_staggered_V4_coarse
+[04:56:29] done  d2_pd1.8_h35_staggered_V4_coarse: ok T_max=325.513316 dP=667.3914999999979 in 16.1 min
+[04:56:29] csv updated (4 rows)
+[04:56:59] mesh  d2_pd2.2_h20_inline_V4_coarse
+[04:59:39] solve d2_pd2.2_h20_inline_V4_coarse
+[05:03:02] done  d2_pd2.2_h20_inline_V4_coarse: ok T_max=340.784067 dP=214.52499999999418 in 6.5 min
+[05:03:02] csv updated (5 rows)
+[05:03:40] mesh  d2_pd2.2_h20_staggered_V4_coarse
+[05:06:10] solve d2_pd2.2_h20_staggered_V4_coarse
+[05:09:29] done  d2_pd2.2_h20_staggered_V4_coarse: ok T_max=338.627187 dP=334.3289999999979 in 6.5 min
+[05:09:29] csv updated (6 rows)
+[05:09:58] mesh  d2_pd2.2_h35_inline_V4_coarse
+[05:14:31] solve d2_pd2.2_h35_inline_V4_coarse
+[05:21:00] done  d2_pd2.2_h35_inline_V4_coarse: ok T_max=333.746208 dP=179.79899999999907 in 11.5 min
+[05:21:00] csv updated (7 rows)
+[05:21:39] mesh  d2_pd2.2_h35_staggered_V4_coarse
+[05:25:42] solve d2_pd2.2_h35_staggered_V4_coarse
+[05:31:56] done  d2_pd2.2_h35_staggered_V4_coarse: ok T_max=332.392514 dP=283.01900000000023 in 10.9 min
+[05:31:56] csv updated (8 rows)
+[05:32:10] mesh  d2_pd2.8_h20_inline_V4_coarse
+[05:33:32] solve d2_pd2.8_h20_inline_V4_coarse
+[05:35:49] done  d2_pd2.8_h20_inline_V4_coarse: ok T_max=358.113531 dP=84.25299999999697 in 3.9 min
+[05:35:49] csv updated (9 rows)
+[05:36:13] mesh  d2_pd2.8_h20_staggered_V4_coarse
+[05:37:39] solve d2_pd2.8_h20_staggered_V4_coarse
+[05:39:59] done  d2_pd2.8_h20_staggered_V4_coarse: ok T_max=353.409279 dP=147.5610000000015 in 4.2 min
+[05:39:59] csv updated (10 rows)
+[05:40:13] mesh  d2_pd2.8_h35_inline_V4_coarse
+[05:42:26] solve d2_pd2.8_h35_inline_V4_coarse
+[05:46:30] done  d2_pd2.8_h35_inline_V4_coarse: ok T_max=348.520485 dP=68.94100000000617 in 6.5 min
+[05:46:30] csv updated (11 rows)
+[05:46:54] mesh  d2_pd2.8_h35_staggered_V4_coarse
+[05:49:20] solve d2_pd2.8_h35_staggered_V4_coarse
+[05:53:26] done  d2_pd2.8_h35_staggered_V4_coarse: ok T_max=345.505812 dP=123.32600000000093 in 6.9 min
+[05:53:26] csv updated (12 rows)
+[05:53:50] mesh  d3_pd1.8_h20_inline_V4_coarse
+[05:56:22] solve d3_pd1.8_h20_inline_V4_coarse
+[05:59:40] done  d3_pd1.8_h20_inline_V4_coarse: ok T_max=337.209873 dP=249.22900000000664 in 6.2 min
+[05:59:40] csv updated (13 rows)
+[06:00:09] mesh  d3_pd1.8_h20_staggered_V4_coarse
+[06:02:51] solve d3_pd1.8_h20_staggered_V4_coarse
+[06:06:01] done  d3_pd1.8_h20_staggered_V4_coarse: ok T_max=334.547052 dP=344.12699999999313 in 6.3 min
+[06:06:01] csv updated (14 rows)
+[06:06:24] mesh  d3_pd1.8_h35_inline_V4_coarse
+[06:10:43] solve d3_pd1.8_h35_inline_V4_coarse
+[06:16:57] done  d3_pd1.8_h35_inline_V4_coarse: ok T_max=329.770404 dP=202.69199999999546 in 10.9 min
+[06:16:57] csv updated (15 rows)
+[06:17:26] mesh  d3_pd1.8_h35_staggered_V4_coarse
+[06:22:05] solve d3_pd1.8_h35_staggered_V4_coarse
+[06:28:05] done  d3_pd1.8_h35_staggered_V4_coarse: ok T_max=327.803165 dP=290.2149999999965 in 11.1 min
+[06:28:05] csv updated (16 rows)
+[06:28:19] mesh  d3_pd2.2_h20_inline_V4_coarse
+[06:29:48] solve d3_pd2.2_h20_inline_V4_coarse
+[06:32:14] done  d3_pd2.2_h20_inline_V4_coarse: ok T_max=350.173984 dP=104.78599999999278 in 4.1 min
+[06:32:14] csv updated (17 rows)
+[06:32:34] mesh  d3_pd2.2_h20_staggered_V4_coarse
+[06:34:05] solve d3_pd2.2_h20_staggered_V4_coarse
+[06:36:27] done  d3_pd2.2_h20_staggered_V4_coarse: ok T_max=345.540778 dP=171.62399999999616 in 4.2 min
+[06:36:27] csv updated (18 rows)
+[06:36:41] mesh  d3_pd2.2_h35_inline_V4_coarse
+[06:39:03] solve d3_pd2.2_h35_inline_V4_coarse
+[06:43:26] done  d3_pd2.2_h35_inline_V4_coarse: ok T_max=339.907968 dP=84.75599999999395 in 7.0 min
+[06:43:26] csv updated (19 rows)
+[06:43:47] mesh  d3_pd2.2_h35_staggered_V4_coarse
+[06:46:20] solve d3_pd2.2_h35_staggered_V4_coarse
+[06:50:39] done  d3_pd2.2_h35_staggered_V4_coarse: ok T_max=336.887104 dP=142.97699999999895 in 7.2 min
+[06:50:39] csv updated (20 rows)
+[06:50:46] mesh  d3_pd2.8_h20_inline_V4_coarse
+[06:51:38] solve d3_pd2.8_h20_inline_V4_coarse
+[06:53:25] done  d3_pd2.8_h20_inline_V4_coarse: ok T_max=374.539028 dP=48.020000000004075 in 2.8 min
+[06:53:25] csv updated (21 rows)
+[06:53:39] mesh  d3_pd2.8_h20_staggered_V4_coarse
+[06:54:30] solve d3_pd2.8_h20_staggered_V4_coarse
+[06:56:13] done  d3_pd2.8_h20_staggered_V4_coarse: ok T_max=367.442461 dP=83.6420000000071 in 2.8 min
+[06:56:13] csv updated (22 rows)
+[06:56:19] mesh  d3_pd2.8_h35_inline_V4_coarse
+[06:57:39] solve d3_pd2.8_h35_inline_V4_coarse
+[07:00:34] done  d3_pd2.8_h35_inline_V4_coarse: ok T_max=359.740459 dP=37.11000000000058 in 4.3 min
+[07:00:34] csv updated (23 rows)
+[07:00:48] mesh  d3_pd2.8_h35_staggered_V4_coarse
+[07:02:05] solve d3_pd2.8_h35_staggered_V4_coarse
+[07:04:52] done  d3_pd2.8_h35_staggered_V4_coarse: ok T_max=354.90843 dP=68.25400000000081 in 4.3 min
+[07:04:52] csv updated (24 rows)
+[07:05:04] mesh  d4_pd1.8_h20_inline_V4_coarse
+[07:06:24] solve d4_pd1.8_h20_inline_V4_coarse
+[07:08:52] done  d4_pd1.8_h20_inline_V4_coarse: ok T_max=344.863878 dP=149.78699999999662 in 4.0 min
+[07:08:52] csv updated (25 rows)
+[07:09:07] mesh  d4_pd1.8_h20_staggered_V4_coarse
+[07:10:32] solve d4_pd1.8_h20_staggered_V4_coarse
+[07:12:56] done  d4_pd1.8_h20_staggered_V4_coarse: ok T_max=343.27239 dP=173.33299999999872 in 4.1 min
+[07:12:56] csv updated (26 rows)
+[07:13:08] mesh  d4_pd1.8_h35_inline_V4_coarse
+[07:15:20] solve d4_pd1.8_h35_inline_V4_coarse
+[07:19:46] done  d4_pd1.8_h35_inline_V4_coarse: ok T_max=335.187676 dP=117.47699999999895 in 6.8 min
+[07:19:46] csv updated (27 rows)
+[07:20:01] mesh  d4_pd1.8_h35_staggered_V4_coarse
+[07:22:22] solve d4_pd1.8_h35_staggered_V4_coarse
+[07:26:38] done  d4_pd1.8_h35_staggered_V4_coarse: ok T_max=333.513945 dP=143.71899999999732 in 6.9 min
+[07:26:38] csv updated (28 rows)
+[07:26:47] mesh  d4_pd2.2_h20_inline_V4_coarse
+[07:27:49] solve d4_pd2.2_h20_inline_V4_coarse
+[07:29:53] done  d4_pd2.2_h20_inline_V4_coarse: ok T_max=358.395877 dP=81.95600000000559 in 3.2 min
+[07:29:53] csv updated (29 rows)
+[07:30:05] mesh  d4_pd2.2_h20_staggered_V4_coarse
+[07:31:05] solve d4_pd2.2_h20_staggered_V4_coarse
+[07:33:06] done  d4_pd2.2_h20_staggered_V4_coarse: ok T_max=352.870397 dP=122.42699999999604 in 3.2 min
+[07:33:06] csv updated (30 rows)
+[07:33:14] mesh  d4_pd2.2_h35_inline_V4_coarse
+[07:34:55] solve d4_pd2.2_h35_inline_V4_coarse
+[07:38:30] done  d4_pd2.2_h35_inline_V4_coarse: ok T_max=345.19963 dP=63.82499999999709 in 5.4 min
+[07:38:30] csv updated (31 rows)
+[07:38:43] mesh  d4_pd2.2_h35_staggered_V4_coarse
+[07:40:22] solve d4_pd2.2_h35_staggered_V4_coarse
+[07:43:46] done  d4_pd2.2_h35_staggered_V4_coarse: ok T_max=341.456964 dP=100.46600000000035 in 5.3 min
+[07:43:46] csv updated (32 rows)
+[07:43:49] mesh  d4_pd2.8_h20_inline_V4_coarse
+[07:44:23] solve d4_pd2.8_h20_inline_V4_coarse
+[07:45:51] done  d4_pd2.8_h20_inline_V4_coarse: ok T_max=397.539501 dP=32.14400000000023 in 2.1 min
+[07:45:51] csv updated (33 rows)
+[07:45:57] mesh  d4_pd2.8_h20_staggered_V4_coarse
+[07:46:30] solve d4_pd2.8_h20_staggered_V4_coarse
+[07:47:58] done  d4_pd2.8_h20_staggered_V4_coarse: ok T_max=391.608806 dP=48.24899999999616 in 2.1 min
+[07:47:59] csv updated (34 rows)
+[07:48:01] mesh  d4_pd2.8_h35_inline_V4_coarse
+[07:48:55] solve d4_pd2.8_h35_inline_V4_coarse
+[07:51:13] done  d4_pd2.8_h35_inline_V4_coarse: ok T_max=377.445609 dP=23.539000000004307 in 3.2 min
+[07:51:13] csv updated (35 rows)
+[07:51:20] mesh  d4_pd2.8_h35_staggered_V4_coarse
+[07:52:10] solve d4_pd2.8_h35_staggered_V4_coarse
+[07:54:21] done  d4_pd2.8_h35_staggered_V4_coarse: ok T_max=372.528311 dP=37.88300000000163 in 3.1 min
+[07:54:22] csv updated (36 rows)
+[07:54:22] sweep finished: 36/36 ok
