@@ -4,7 +4,8 @@ DST=$HOME/heatsink-cfd
 RES=$SRC/results; mkdir -p "$RES/T0"
 mkdir -p "$DST"
 for d in src tests scripts jobs; do rm -rf "$DST/$d"; cp -r "$SRC/$d" "$DST/"; done
-cp "$SRC"/*.md "$SRC"/requirements.txt "$SRC"/.gitignore "$DST/" 2>/dev/null
+cp "$SRC"/*.md "$SRC"/requirements.txt "$SRC"/.gitignore "$SRC"/LICENSE "$DST/" 2>/dev/null
+[ -f "$SRC/Makefile.txt" ] && cp "$SRC/Makefile.txt" "$DST/Makefile"
 cd "$DST" && find . -name "*.sh" -exec sed -i 's/\r$//' {} + && find . -name "*.py" -exec sed -i 's/\r$//' {} +
 echo "python: $(python3 --version 2>&1)"
 if [ ! -x .venv/bin/python ]; then

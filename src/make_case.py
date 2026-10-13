@@ -629,7 +629,7 @@ run() { name=$1; shift; echo "Running $name"; "$name" "$@" > log.$name 2>&1 || {
 rm -rf constant/polyMesh/sets
 run blockMesh
 run snappyHexMesh -overwrite
-run splitMeshRegions -cellZones -defaultRegionName fluid -overwrite
+run splitMeshRegions -cellZones -overwrite
 checkMesh -region fluid -constant > log.checkMesh.fluid 2>&1
 checkMesh -region solid -constant > log.checkMesh.solid 2>&1
 """
