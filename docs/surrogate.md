@@ -39,7 +39,7 @@ Compared with the nearest swept designs at 4 m/s (inline, p/d = 1.8, h = 35 mm),
 
 ## Limits
 
-- The model was trained on coarse-mesh CFD. Medium-mesh dP is about 25 % lower than coarse (docs/mesh_study.md), so absolute dP values carry that offset; the trends and the ranking of designs are what the model captures.
+- The model was trained on coarse-mesh CFD. Medium-mesh dP is 4-25 % lower than coarse and sparse arrays also move 11 % in R (docs/mesh_study.md), so absolute values carry that offset; the trends and the ranking of designs are what the model captures.
 - Only the 10 best designs were simulated at 2 and 6 m/s, so the velocity dependence is learned from a subset of the design space; the optimum is reported at 4 m/s only.
 - With 56 points, the design space is sparsely sampled; the verification case is the evidence that the optimum is real, not the cross-validation score alone.
 - The first attempt is kept here deliberately: a good cross-validation score did not guarantee a good prediction between grid points.
