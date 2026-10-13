@@ -1,0 +1,13 @@
+# Progress (single source of truth; the loop edits this file)
+- [ ] T0 Environment and repo
+- [x] T1 Parametric geometry  DONE 2026-10-12: tests/test_geometry.py 6 passed (3 variants build, STLs watertight, pin counts 256/77/25 and volumes within 1%)
+- [x] T2 Hand-calculation baseline  DONE 2026-10-12: tests/test_analytic.py 5 passed; centre design 2/4/6 m/s -> R = 0.523/0.378/0.321 K/W, dP = 35/155/353 Pa, monotonic
+- [ ] T3 CFD case generator
+- [ ] T4 Mesh independence
+- [ ] T5 Validation
+- [ ] T6 Sweep runner (36 cases at 4 m/s)
+- [ ] T7 Analysis and Pareto front
+- [ ] T8 Surrogate model on GPU
+- [ ] T9 Visuals
+- [ ] T10 Report and repo polish
+- [ ] T11 Independent audit
