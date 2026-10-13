@@ -57,7 +57,8 @@ T2 Hand-calculation baseline (src/analytic.py)
 T3 CFD case generator (src/make_case.py)
   - Start from the OpenFOAM 14 tutorial under /opt/openfoam14/tutorials/multiRegion that is
     closest to a heated solid in a duct. Copy its structure; never invent dictionary syntax.
-  - blockMesh background + snappyHexMesh with the STLs, pin refinement, 3 boundary layers.
+  - blockMesh background + snappyHexMesh per region (heat sink surface as a wall patch), prism
+    layers on the fluid side, regions coupled with createNonConformalCouples (hotWire tutorial).
   - Fixed heat flux on the chip patch (blockMesh patch + fixedGradient T), velocity inlet,
     pressure outlet, no-slip shroud and floor, symmetry sides.
   - Function objects: chip patch max T, inlet-outlet pressure drop, residuals.

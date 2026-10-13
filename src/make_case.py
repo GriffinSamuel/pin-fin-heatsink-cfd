@@ -138,9 +138,10 @@ mergePatchPairs
 
 # ----------------------------------------------------------------- snappyHexMesh
 
-def snappy_dict(H: float, level: dict, flavour: str) -> str:
-    zone_mode = ("mode        insidePoint;\n            insidePoint (0.0305 0.0305 0.0021);" if flavour == "org"
-                 else "cellZoneInside insidePoint;\n            insidePoint (0.0305 0.0305 0.0021);")
+def snappy_dict(H: float, level: dict, flavour: str, region: str, n_layers: int = 4) -> str:
+    """Per-region snappyHexMesh dictionary. The heat sink surface is a wall patch in both
+    regions; the fluid mesh gets prism layers on it; the two region meshes are coupled
+    afterwards with createNonConformalCouples (OpenFOAM-14 hotWire tutorial pattern)."""
     inside_key = "insidePoint" if flavour == "org" else "locationInMesh"
     lvl_key = "level" if flavour == "org" else "levels"
     tri_type = "triSurface" if flavour == "org" else "triSurfaceMesh"
@@ -152,12 +153,20 @@ def snappy_dict(H: float, level: dict, flavour: str) -> str:
                "    nSmoothScale 4;\n    errorReduction 0.75;\n    relaxed\n    {\n        maxNonOrtho 75;\n    }\n}")
     include = '#includeEtc "caseDicts/mesh/generation/snappyHexMeshDict.cfg"' if flavour == "org" else ""
     hmid = H / 2 + 0.0004          # off the background cell faces
-    return hdr("dictionary", "snappyHexMeshDict") + f"""
+    if region == "fluid":
+        inside = f"(-0.0305 0.0305 {hmid:.4f})"
+        add_layers = "true" if n_layers > 0 else "false"
+        layers = f"        heatsink\n        {{\n            nSurfaceLayers {n_layers};\n        }}"
+    else:
+        inside = "(0.0305 0.0305 0.0021)"
+        add_layers = "false"
+        layers = ""
+    return hdr("dictionary", "snappyHexMeshDict", f"system/{region}") + f"""
 {include}
 
 castellatedMesh true;
 snap            true;
-addLayers       false;
+addLayers       {add_layers};
 
 geometry
 {{
@@ -199,9 +208,10 @@ castellatedMeshControls
         heatsink
         {{
             level ({level['surf']} {level['surf']});
-            faceZone heatsink;
-            cellZone solid;
-            {zone_mode}
+            patchInfo
+            {{
+                type wall;
+            }}
         }}
     }}
 
@@ -219,7 +229,7 @@ castellatedMeshControls
         }}
     }}
 
-    {inside_key} (-0.0305 0.0305 {hmid:.4f});
+    {inside_key} {inside};
 }}
 
 snapControls
@@ -239,10 +249,11 @@ addLayersControls
     relativeSizes true;
     layers
     {{
+{layers}
     }}
     expansionRatio 1.2;
     finalLayerThickness 0.4;
-    minThickness 0.1;
+    minThickness 0.05;
     nGrow 0;
     featureAngle 100;
     slipFeatureAngle 30;
@@ -261,6 +272,20 @@ addLayersControls
 
 debug 0;
 mergeTolerance 1e-6;
+"""
+
+
+NCC_DICT = """
+fields          no;
+
+nonConformalCouples
+{
+    interface
+    {
+        regions         (solid fluid);
+        patches         (heatsink heatsink);
+    }
+}
 """
 
 
@@ -284,6 +309,7 @@ def fluid_fields(V: float, k_in: float, omega_in: float, mixing_length: float) -
     return {
         "U": field("volVectorField", "U", "[0 1 -1 0 0 0 0]", f"uniform ({V} 0 0)", f"""
     ".*"            {{ type noSlip; }}
+    heatsink        {{ type slip; }}
     inlet           {{ type fixedValue; value uniform ({V} 0 0); }}
     outlet          {{ type pressureInletOutletVelocity; value uniform (0 0 0); }}
 {sct}""", "fluid"),
@@ -291,7 +317,7 @@ def fluid_fields(V: float, k_in: float, omega_in: float, mixing_length: float) -
     ".*"            {{ type zeroGradient; }}
     inlet           {{ type fixedValue; value uniform {T_IN}; }}
     outlet          {{ type inletOutlet; inletValue uniform {T_IN}; value uniform {T_IN}; }}
-    fluid_to_solid  {{ type coupledTemperature; value uniform {T_IN}; }}
+    interface_on_heatsink {{ type coupledTemperature; value uniform {T_IN}; }}
 {sct}""", "fluid"),
         "p": field("volScalarField", "p", "[1 -1 -2 0 0 0 0]", f"uniform {P_REF:g}", f"""
     ".*"            {{ type fixedFluxPressure; value $internalField; }}
@@ -325,7 +351,7 @@ def solid_T(q_flux: float) -> str:
     return field("volScalarField", "T", "[0 0 0 1 0 0 0]", f"uniform {T_IN + 20}", f"""
     ".*"            {{ type zeroGradient; }}
     chip            {{ type fixedGradient; gradient uniform {grad:.6g}; }}
-    solid_to_fluid  {{ type coupledTemperature; value uniform {T_IN + 20}; }}
+    interface_on_heatsink {{ type coupledTemperature; value uniform {T_IN + 20}; }}
     #includeEtc "caseDicts/setConstraintTypes"
 """, "solid")
 
@@ -619,9 +645,11 @@ cd ${0%/*} || exit 1    # Run from this directory
 
 rm -rf constant/polyMesh/sets
 
-runApplication blockMesh || exit 1
-runApplication snappyHexMesh || exit 1
-runApplication splitMeshRegions -cellZones all -defaultRegion fluid || exit 1
+runApplication -s fluid blockMesh -region fluid || exit 1
+runApplication -s solid blockMesh -region solid || exit 1
+runApplication -s fluid snappyHexMesh -region fluid || exit 1
+runApplication -s solid snappyHexMesh -region solid || exit 1
+runApplication createNonConformalCouples || exit 1
 runApplication -s fluid checkMesh -region fluid -constant
 runApplication -s solid checkMesh -region solid -constant
 """
@@ -630,13 +658,14 @@ runApplication -s solid checkMesh -region solid -constant
 #!/bin/sh
 cd ${0%/*} || exit 1
 . ${WM_PROJECT_DIR:-/usr/share/openfoam}/bin/tools/RunFunctions 2>/dev/null || true
-run() { name=$1; shift; echo "Running $name"; "$name" "$@" > log.$name 2>&1 || { echo "FAILED: $name (see log.$name)"; exit 1; }; }
-rm -rf constant/polyMesh/sets
-run blockMesh
-run snappyHexMesh -overwrite
-run splitMeshRegions -cellZones -overwrite
+run() { name=$1; log=$2; shift 2; echo "Running $name ($log)"; "$name" "$@" > log.$log 2>&1 || { echo "FAILED: $name (see log.$log)"; exit 1; }; }
+run blockMesh blockMesh.fluid -region fluid
+run blockMesh blockMesh.solid -region solid
+run snappyHexMesh snappyHexMesh.fluid -region fluid -overwrite
+run snappyHexMesh snappyHexMesh.solid -region solid -overwrite
 checkMesh -region fluid -constant > log.checkMesh.fluid 2>&1
 checkMesh -region solid -constant > log.checkMesh.solid 2>&1
+echo "esi flavour: no non-conformal coupling available; meshes only"
 """
 
 
@@ -658,7 +687,7 @@ rm -rf processor*
 
 
 def write_case(spec: HeatSinkSpec, V: float, mesh: str, out: str, n_proc: int = 6,
-               n_iter: int = 1500, flavour: str = "org") -> dict:
+               n_iter: int = 1500, flavour: str = "org", n_layers: int = 4) -> dict:
     is_plate = isinstance(spec, PlateFinSpec)
     meta = platefin_metadata(spec) if is_plate else metadata(spec)
     H = (spec.base_t + spec.h) * 1e-3
@@ -680,8 +709,10 @@ def write_case(spec: HeatSinkSpec, V: float, mesh: str, out: str, n_proc: int = 
     omega_in = math.sqrt(k_in) / (0.09 ** 0.25 * L_mix)
     q_flux = Q_CHIP / 0.03 ** 2
 
-    w(os.path.join(out, "system", "blockMeshDict"), block_mesh_dict(H))
-    w(os.path.join(out, "system", "snappyHexMeshDict"), snappy_dict(H, level, flavour))
+    for region in ("fluid", "solid"):
+        w(os.path.join(out, "system", region, "blockMeshDict"), block_mesh_dict(H))
+        w(os.path.join(out, "system", region, "snappyHexMeshDict"), snappy_dict(H, level, flavour, region, n_layers))
+    w(os.path.join(out, "system", "createNonConformalCouplesDict"), hdr("dictionary", "createNonConformalCouplesDict") + NCC_DICT)
     w(os.path.join(out, "system", "meshQualityDict"), hdr("dictionary", "meshQualityDict") +
       '\n#includeEtc "caseDicts/mesh/generation/meshQualityDict.cfg"\n')
     w(os.path.join(out, "system", "controlDict"), control_dict(n_iter))
@@ -719,7 +750,7 @@ def write_case(spec: HeatSinkSpec, V: float, mesh: str, out: str, n_proc: int = 
     pred = None if is_plate else analytic_solve(meta, V)
     case_meta = {
         "spec": {**meta["spec"], "layout": spec.layout}, "name": spec.name, "V": V, "mesh": mesh, "n_proc": n_proc,
-        "n_iter": n_iter, "flavour": flavour, "duct_height_m": H, "q_flux_W_m2": q_flux,
+        "n_iter": n_iter, "flavour": flavour, "n_layers": n_layers, "duct_height_m": H, "q_flux_W_m2": q_flux,
         "k_in": k_in, "omega_in": omega_in, "n_pins": meta.get("n_pins", meta.get("n_fins")),
         "n_rows": meta.get("n_rows"), "fin_mass_g": meta["fin_mass_g"], "kind": "plate" if is_plate else "pin",
         "analytic": {k: pred[k] for k in ("R_total_K_W", "R_conv_K_W", "R_base_K_W", "dP_Pa",
@@ -744,6 +775,7 @@ def main(argv=None):
     ap.add_argument("--np", type=int, default=6)
     ap.add_argument("--iters", type=int, default=1500)
     ap.add_argument("--flavour", choices=["org", "esi"], default="org")
+    ap.add_argument("--layers", type=int, default=4, help="prism layers on the heat sink surface (fluid side)")
     ap.add_argument("--out", required=True)
     a = ap.parse_args(argv)
     if a.layout == "plate":
@@ -751,7 +783,7 @@ def main(argv=None):
         spec = platefin_for_mass(a.match_mass, a.h, a.plate_t) if a.match_mass else PlateFinSpec(a.plate_t, a.plate_n, a.h)
     else:
         spec = HeatSinkSpec(a.d, a.pd, a.h, a.layout)
-    m = write_case(spec, a.V, a.mesh, a.out, a.np, a.iters, a.flavour)
+    m = write_case(spec, a.V, a.mesh, a.out, a.np, a.iters, a.flavour, a.layers)
     an = m["analytic"]
     print(f"wrote {a.out}: {m['name']} V={a.V} mesh={a.mesh} np={a.np} iters={a.iters}" +
           (f"; analytic R={an['R_total_K_W']:.3f} K/W dP={an['dP_Pa']:.1f} Pa" if an else ""))

@@ -35,3 +35,12 @@
   solver, the translation was abandoned rather than debugged. The OpenFOAM 14 settings follow
   the circuitBoardCooling tutorial: U initialised to the inlet velocity, relaxation
   U 0.3 / h 0.7 / k,omega 0.3 / p 0.7, upwind for k and omega, 2nd-order for U and h.
+- 2026-10-12 First OpenFOAM-14 run (coarse mesh, centre design): everything executes and
+  balances (99.9 W in through the chip, 99.9 W out through the interface, dP 137 Pa vs 155 Pa
+  from the correlation) but R = 0.70 K/W against 0.38 K/W predicted. The y+ on the pins is
+  ~6 (buffer layer) and the first cell is 0.75 mm, so the near-wall heat transfer is limited by
+  conduction across the first cell rather than resolved. Decision: mesh each region separately
+  (heat sink surface as a wall patch), add prism layers on the fluid side, and couple the two
+  meshes with createNonConformalCouples exactly as the OpenFOAM-14 hotWire tutorial does.
+  The single-mesh cellZone/splitMeshRegions route cannot add layers (OpenFOAM-14 layer
+  addition is patch-based only).
