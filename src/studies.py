@@ -136,7 +136,12 @@ def plate_comparison(mesh: str, np_: int, iters: int, match_mass: float, h: floa
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("what", choices=["mesh", "validate", "plate"])
+    ap.add_argument("what", choices=["mesh", "validate", "plate", "custom"])
+    ap.add_argument("--d", type=float, default=3.0)
+    ap.add_argument("--pd", type=float, default=2.2)
+    ap.add_argument("--layout", default="staggered")
+    ap.add_argument("--V", type=float, default=4.0)
+    ap.add_argument("--root", default="work/custom")
     ap.add_argument("--mesh", default="medium")
     ap.add_argument("--np", type=int, default=6)
     ap.add_argument("--jobs", type=int, default=1)
@@ -148,6 +153,17 @@ def main(argv=None):
     a = ap.parse_args(argv)
     if a.what == "mesh":
         mesh_study(a.np, a.jobs, a.iters, tuple(a.levels))
+    elif a.what == "custom":
+        spec = HeatSinkSpec(a.d, a.pd, a.h, a.layout)
+        os.makedirs(a.root, exist_ok=True)
+        r = run_one(spec, a.V, a.mesh, a.np, a.iters, a.root, 1800, 3600)
+        an = analytic_solve(metadata(spec), a.V)
+        out = {"spec": [a.d, a.pd, a.h, a.layout], "V": a.V, "mesh": a.mesh, "R_cfd": r.get("R_max_K_W"), "dP_cfd": r.get("dP_Pa"),
+               "R_hand": an["R_total_K_W"], "dP_hand": an["dP_Pa"], "status": r.get("status")}
+        os.makedirs("results", exist_ok=True)
+        with open(os.path.join("results", f"custom_{spec.name}_V{a.V:g}_{a.mesh}.json"), "w") as f:
+            json.dump(out, f, indent=2)
+        print(json.dumps(out, indent=2))
     elif a.what == "validate":
         validation(a.mesh, a.np, a.jobs, a.iters)
     else:
