@@ -87,7 +87,7 @@ def validation(mesh: str, np_: int, jobs: int, iters: int, root="work/validation
         an = analytic_solve(meta, V)
         rows.append({"V": V, "R_cfd": r.get("R_max_K_W"), "R_hand": an["R_total_K_W"], "R_hand_zukauskas": an["R_total_zukauskas_K_W"],
                      "dP_cfd": r.get("dP_Pa"), "dP_hand": an["dP_Pa"], "T_out_cfd_C": (r.get("T_out_K") or float("nan")) - 273.15,
-                     "T_out_hand_C": an["T_out"], "Q_chip_W": r.get("Q_chip_W"), "Q_balance_W": r.get("Q_energy_balance_W"),
+                     "T_out_hand_C": an["T_out"], "Q_chip_W": r.get("Q_chip_W"), "Q_balance_W": r.get("Q_interface_W"),
                      "status": r.get("status")})
     df = pd.DataFrame(rows)
     df["R_ratio"] = df["R_cfd"] / df["R_hand"]
@@ -97,7 +97,7 @@ def validation(mesh: str, np_: int, jobs: int, iters: int, root="work/validation
     lines = ["# Validation against hand calculations", "",
              f"Centre design, {mesh} mesh. Hand calculation: ESDU 73031 (Nu), Gaddis-Gnielinski (dP), pin-fin efficiency, "
              "NTU treatment of the array, Lee et al. spreading resistance (see src/analytic.py).", "",
-             "| V m/s | R CFD | R hand | ratio | dP CFD | dP hand | ratio | T_out CFD | T_out hand | Q chip W | Q air W |",
+             "| V m/s | R CFD | R hand | ratio | dP CFD | dP hand | ratio | T_out CFD | T_out hand | Q chip W | Q to air through interface W |",
              "|---|---|---|---|---|---|---|---|---|---|---|"]
     for _, r in df.iterrows():
         if pd.notna(r["R_cfd"]):

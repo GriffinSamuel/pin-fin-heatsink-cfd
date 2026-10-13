@@ -62,3 +62,8 @@ Mesh study: coarse 0.49M cells (13 min solve), medium 2.2M (60 min, hit the cap)
 R changes 3.7 % coarse to medium, dP 25 %. PLAN's medium-to-fine < 3 % criterion cannot be met on this hardware; recorded
 as a limitation, not hidden. Sweep and validation run on the coarse mesh with 700 iterations (T_max moves < 0.03 K between
 400 and 1500 iterations on the centre case). Key designs are re-run on medium afterwards to report the dP offset.
+
+## D12 (2026-10-13) One case at a time
+Two concurrent 6-process cases each ran ~4x slower than a solo case (519 iterations in 30 min vs ~0.5 s/iteration solo),
+so throughput was worse than sequential. The sweep runs 1 case at a time with 8 processes and 600 iterations (the centre
+case is converged to 0.03 K by 400 iterations). PLAN.md's "2 cases at a time" was based on a benchmark of a different case size.

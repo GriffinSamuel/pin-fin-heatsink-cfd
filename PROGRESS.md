@@ -4,7 +4,7 @@
 - [x] T2 Hand-calculation baseline  DONE 2026-10-12: tests/test_analytic.py 5 passed; centre design 2/4/6 m/s -> R = 0.523/0.378/0.321 K/W, dP = 35/155/353 Pa, monotonic
 - [x] T3 CFD case generator  DONE 2026-10-12: centre design 4 m/s, fluid 424k + solid 64k cells (Mesh OK both; 0.49M total vs <0.4M target, see DECISIONS D10), 400 iterations, residuals p 8e-4, U 3e-4, h 3e-4, k 3e-4, omega 4e-5; R_max = 0.387 K/W (hand calc 0.378, +2.5 %), dP = 143 Pa (hand calc 155, -8 %), chip power balance 100.04 W in / 100.05 W out through the interface; ~200 s on 6 cores
 - [~] T4 Mesh independence  PARTIAL 2026-10-13: coarse/medium done (R +3.7 %/dP -25 % from coarse to medium); fine mesh (9.7M cells) infeasible on this laptop, so the <3 % criterion is NOT met; documented in docs/mesh_study.md and DECISIONS D11
-- [ ] T5 Validation
+- [x] T5 Validation  DONE 2026-10-13 (coarse mesh): CFD vs hand calc at 2/4/6 m/s: R 0.521/0.387/0.337 vs 0.523/0.378/0.321 K/W (within 5 %), dP 41/143/303 vs 35/155/353 Pa (within 19 %). 2 and 4 m/s cases stopped at ~515 iterations by the time cap (T drift negligible); running two 6-process cases at once was ~4x slower per case, so the sweep runs one case at a time
 - [ ] T6 Sweep runner (36 cases at 4 m/s)
 - [ ] T7 Analysis and Pareto front
 - [ ] T8 Surrogate model on GPU
