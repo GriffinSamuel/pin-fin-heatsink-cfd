@@ -126,6 +126,80 @@ def make_heatsink_for_snappy(spec: HeatSinkSpec, embed: float = EMBED) -> cq.Wor
     return base.union(pins)
 
 
+@dataclass
+class PlateFinSpec:
+    """Straight plate fins along the flow, for the equal-mass comparison (T7)."""
+    t: float            # fin thickness, mm
+    n: int              # number of fins
+    h: float            # fin height, mm
+    base_l: float = BASE_L
+    base_w: float = BASE_W
+    base_t: float = BASE_T
+
+    @property
+    def name(self) -> str:
+        return f"plate_t{self.t:g}_n{self.n}_h{self.h:g}"
+
+    @property
+    def layout(self) -> str:
+        return "plate"
+
+
+def platefin_for_mass(fin_mass_g: float, h: float, t: float = 1.5) -> PlateFinSpec:
+    """Plate-fin array with the same fin mass as a pin-fin design: n = V / (t h L)."""
+    v = fin_mass_g / 1e3 / AL_DENSITY * 1e9                   # mm^3
+    n = max(2, int(round(v / (t * h * BASE_L))))
+    return PlateFinSpec(t, n, h)
+
+
+def plate_positions(spec: PlateFinSpec, margin: float = MARGIN) -> list[float]:
+    usable = spec.base_w - 2 * margin - spec.t
+    pitch = usable / (spec.n - 1)
+    return [margin + spec.t / 2 + i * pitch for i in range(spec.n)]
+
+
+def platefin_metadata(spec: PlateFinSpec) -> dict:
+    ys = plate_positions(spec)
+    v_fins = spec.n * spec.t * spec.h * spec.base_l
+    v_base = spec.base_l * spec.base_w * spec.base_t
+    return {
+        "spec": asdict(spec), "kind": "plate", "n_fins": spec.n, "pitch_mm": ys[1] - ys[0] if spec.n > 1 else None,
+        "gap_mm": (ys[1] - ys[0] - spec.t) if spec.n > 1 else None, "fin_y_mm": ys,
+        "volume_mm3": v_base + v_fins, "fin_volume_mm3": v_fins,
+        "fin_mass_g": v_fins * 1e-9 * AL_DENSITY * 1e3, "total_mass_g": (v_base + v_fins) * 1e-9 * AL_DENSITY * 1e3,
+        "area_fins_mm2": spec.n * (2 * spec.h * spec.base_l + spec.t * spec.base_l),
+        "chip_mm": CHIP, "chip_xy_mm": [(spec.base_l - CHIP) / 2, (spec.base_w - CHIP) / 2],
+        "duct_height_mm": spec.base_t + spec.h,
+    }
+
+
+def make_platefin(spec: PlateFinSpec, embed: float = 0.0) -> cq.Workplane:
+    base = (cq.Workplane("XY")
+            .box(spec.base_l, spec.base_w + 2 * embed, spec.base_t + embed, centered=False)
+            .translate((0, -embed, -embed)))
+    fins = None
+    for y in plate_positions(spec):
+        f = (cq.Workplane("XY").box(spec.base_l, spec.t, spec.h + 1.0 + embed, centered=False)
+             .translate((0, y - spec.t / 2, spec.base_t - 1.0)))
+        fins = f if fins is None else fins.union(f)
+    return base.union(fins)
+
+
+def export_platefin(spec: PlateFinSpec, out_dir: str, tol: float = 0.02) -> dict:
+    os.makedirs(out_dir, exist_ok=True)
+    clean = make_platefin(spec, 0.0)
+    snappy = make_platefin(spec, EMBED)
+    cq.exporters.export(clean, os.path.join(out_dir, "heatsink.step"))
+    cq.exporters.export(clean, os.path.join(out_dir, "heatsink.stl"), tolerance=tol, angularTolerance=0.1)
+    cq.exporters.export(cq.Workplane("XY").add(snappy.val().scale(0.001)), os.path.join(out_dir, "heatsink_snappy.stl"),
+                        tolerance=tol * 1e-3, angularTolerance=0.1)
+    meta = platefin_metadata(spec)
+    meta["cad_volume_mm3"] = clean.val().Volume()
+    with open(os.path.join(out_dir, "meta.json"), "w") as f:
+        json.dump(meta, f, indent=2)
+    return meta
+
+
 def export_all(spec: HeatSinkSpec, out_dir: str, tol: float = 0.02) -> dict:
     os.makedirs(out_dir, exist_ok=True)
     clean = make_heatsink(spec)

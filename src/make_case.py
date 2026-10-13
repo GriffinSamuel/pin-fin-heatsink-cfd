@@ -24,7 +24,7 @@ import shutil
 import stat
 import textwrap
 
-from src.geometry import HeatSinkSpec, export_all, metadata
+from src.geometry import HeatSinkSpec, PlateFinSpec, export_all, export_platefin, metadata, platefin_metadata
 from src.analytic import solve as analytic_solve
 
 T_IN = 298.15           # K (25 C)
@@ -654,12 +654,13 @@ rm -rf processor*
 
 def write_case(spec: HeatSinkSpec, V: float, mesh: str, out: str, n_proc: int = 6,
                n_iter: int = 1500, flavour: str = "org") -> dict:
-    meta = metadata(spec)
+    is_plate = isinstance(spec, PlateFinSpec)
+    meta = platefin_metadata(spec) if is_plate else metadata(spec)
     H = (spec.base_t + spec.h) * 1e-3
     level = MESH_LEVELS[mesh]
     os.makedirs(out, exist_ok=True)
     geom_dir = os.path.join(out, "geometry")
-    export_all(spec, geom_dir)
+    (export_platefin if is_plate else export_all)(spec, geom_dir)
     os.makedirs(os.path.join(out, "constant", "geometry"), exist_ok=True)
     shutil.copy(os.path.join(geom_dir, "heatsink_snappy.stl"), os.path.join(out, "constant", "geometry", "heatsink.stl"))
     if flavour == "esi":   # v1912 looks in constant/triSurface
@@ -710,14 +711,14 @@ def write_case(spec: HeatSinkSpec, V: float, mesh: str, out: str, n_proc: int = 
     w(os.path.join(out, "Allmesh"), allmesh(flavour), executable=True)
     w(os.path.join(out, "Allrun"), allrun(n_proc), executable=True)
 
-    pred = analytic_solve(meta, V)
+    pred = None if is_plate else analytic_solve(meta, V)
     case_meta = {
-        "spec": meta["spec"], "name": spec.name, "V": V, "mesh": mesh, "n_proc": n_proc,
+        "spec": {**meta["spec"], "layout": spec.layout}, "name": spec.name, "V": V, "mesh": mesh, "n_proc": n_proc,
         "n_iter": n_iter, "flavour": flavour, "duct_height_m": H, "q_flux_W_m2": q_flux,
-        "k_in": k_in, "omega_in": omega_in, "n_pins": meta["n_pins"], "n_rows": meta["n_rows"],
-        "fin_mass_g": meta["fin_mass_g"],
+        "k_in": k_in, "omega_in": omega_in, "n_pins": meta.get("n_pins", meta.get("n_fins")),
+        "n_rows": meta.get("n_rows"), "fin_mass_g": meta["fin_mass_g"], "kind": "plate" if is_plate else "pin",
         "analytic": {k: pred[k] for k in ("R_total_K_W", "R_conv_K_W", "R_base_K_W", "dP_Pa",
-                                           "T_chip_max_C", "Re_max", "h_W_m2K", "eta_fin")},
+                                           "T_chip_max_C", "Re_max", "h_W_m2K", "eta_fin")} if pred else {},
     }
     with open(os.path.join(out, "case.json"), "w") as f:
         json.dump(case_meta, f, indent=2)
@@ -726,10 +727,13 @@ def write_case(spec: HeatSinkSpec, V: float, mesh: str, out: str, n_proc: int = 
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("--d", type=float, required=True)
-    ap.add_argument("--pd", type=float, required=True)
+    ap.add_argument("--d", type=float)
+    ap.add_argument("--pd", type=float)
     ap.add_argument("--h", type=float, required=True)
-    ap.add_argument("--layout", choices=["inline", "staggered"], required=True)
+    ap.add_argument("--layout", choices=["inline", "staggered", "plate"], required=True)
+    ap.add_argument("--plate-t", type=float, default=1.5, help="plate-fin thickness, mm (layout=plate)")
+    ap.add_argument("--plate-n", type=int, default=None, help="number of plate fins (layout=plate)")
+    ap.add_argument("--match-mass", type=float, default=None, help="plate fins sized to this fin mass, g")
     ap.add_argument("--V", type=float, default=4.0)
     ap.add_argument("--mesh", choices=list(MESH_LEVELS), default="coarse")
     ap.add_argument("--np", type=int, default=6)
@@ -737,10 +741,15 @@ def main(argv=None):
     ap.add_argument("--flavour", choices=["org", "esi"], default="org")
     ap.add_argument("--out", required=True)
     a = ap.parse_args(argv)
-    spec = HeatSinkSpec(a.d, a.pd, a.h, a.layout)
+    if a.layout == "plate":
+        from src.geometry import platefin_for_mass
+        spec = platefin_for_mass(a.match_mass, a.h, a.plate_t) if a.match_mass else PlateFinSpec(a.plate_t, a.plate_n, a.h)
+    else:
+        spec = HeatSinkSpec(a.d, a.pd, a.h, a.layout)
     m = write_case(spec, a.V, a.mesh, a.out, a.np, a.iters, a.flavour)
-    print(f"wrote {a.out}: {m['name']} V={a.V} mesh={a.mesh} np={a.np} iters={a.iters}; "
-          f"analytic R={m['analytic']['R_total_K_W']:.3f} K/W dP={m['analytic']['dP_Pa']:.1f} Pa")
+    an = m["analytic"]
+    print(f"wrote {a.out}: {m['name']} V={a.V} mesh={a.mesh} np={a.np} iters={a.iters}" +
+          (f"; analytic R={an['R_total_K_W']:.3f} K/W dP={an['dP_Pa']:.1f} Pa" if an else ""))
 
 
 if __name__ == "__main__":
