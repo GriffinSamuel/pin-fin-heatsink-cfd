@@ -27,3 +27,11 @@
   sensitivity.
 - 2026-10-12 Local development uses OpenFOAM v1912 (ESI) in the cloud workspace for mesh
   testing only (flavour "esi" in make_case.py); all solver runs use OpenFOAM 14 on the laptop.
+- 2026-10-12 Local solver check: the coarse centre-design mesh was run with plain simpleFoam
+  (laminar, incompressible, OpenFOAM v1912) as a mesh/physics sanity check: converging,
+  inlet-outlet pressure drop ~175 Pa (correlation 155 Pa), max speed 21 m/s, all plausible.
+  A v1912 chtMultiRegionSimpleFoam translation of the case diverged at the second iteration
+  (fluid enthalpy); since that solver and its dictionaries differ from OpenFOAM 14's fluid
+  solver, the translation was abandoned rather than debugged. The OpenFOAM 14 settings follow
+  the circuitBoardCooling tutorial: U initialised to the inlet velocity, relaxation
+  U 0.3 / h 0.7 / k,omega 0.3 / p 0.7, upwind for k and omega, 2nd-order for U and h.

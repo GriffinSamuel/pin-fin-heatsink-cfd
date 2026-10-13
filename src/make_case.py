@@ -282,7 +282,7 @@ boundaryField
 def fluid_fields(V: float, k_in: float, omega_in: float, mixing_length: float) -> dict:
     sct = '    #includeEtc "caseDicts/setConstraintTypes"'
     return {
-        "U": field("volVectorField", "U", "[0 1 -1 0 0 0 0]", "uniform (0 0 0)", f"""
+        "U": field("volVectorField", "U", "[0 1 -1 0 0 0 0]", f"uniform ({V} 0 0)", f"""
     ".*"            {{ type noSlip; }}
     inlet           {{ type fixedValue; value uniform ({V} 0 0); }}
     outlet          {{ type pressureInletOutletVelocity; value uniform (0 0 0); }}
@@ -418,8 +418,8 @@ divSchemes
     div(phi,U)      bounded Gauss linearUpwind limited;
     div(phi,K)      bounded Gauss limitedLinear 1;
     div(phi,h)      bounded Gauss limitedLinear 1;
-    div(phi,k)      bounded Gauss limitedLinear 1;
-    div(phi,omega)  bounded Gauss limitedLinear 1;
+    div(phi,k)      bounded Gauss upwind;
+    div(phi,omega)  bounded Gauss upwind;
     div(((rho*nuEff)*dev2(T(grad(U))))) Gauss linear;
 }
 
@@ -489,13 +489,13 @@ relaxationFactors
     fields
     {
         rho             1.0;
-        p               0.3;
+        p               0.7;
     }
     equations
     {
-        U               0.7;
+        U               0.3;
         h               0.7;
-        "(k|omega)"     0.7;
+        "(k|omega)"     0.3;
     }
 }
 """
