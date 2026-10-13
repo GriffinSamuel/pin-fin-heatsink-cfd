@@ -27,5 +27,5 @@ import json; o=json.load(open('results/surrogate.json'))['optimum']; print(o['d'
 echo "predicted optimum (d pd h layout): $OPT"
 set -- $OPT
 .venv/bin/python -m src.studies custom --d $1 --pd $2 --h $3 --layout $4 --V 4 --mesh coarse --np 8 --iters 600 2>&1 | tail -15
-mkdir -p "$SRC/results/T8b"; cp results/surrogate.json results/surrogate_cv.csv results/custom_*.json "$SRC/results/T8/" 2>/dev/null
+mkdir -p "$SRC/results/T8b"; cp results/surrogate.json results/surrogate_cv.csv results/custom_*.json "$SRC/results/T8b/" 2>/dev/null
 echo "T8b job done"
