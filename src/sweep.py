@@ -1,12 +1,12 @@
 """Design sweep runner (T6): generates, meshes, solves and parses many cases on the laptop.
 
-Runs N cases concurrently (default 2), each with its own MPI processes (default 6), with
+Runs N cases concurrently (the Makefile uses 1 at a time with 8 processes; see DECISIONS D12), with
 wall-clock caps on meshing and solving. Resumable: a case whose results.json already holds a
 temperature result is skipped. After every case, results/sweep.csv is rewritten from all
 results.json files found, and the summary is mirrored to the Windows results folder.
 
 Usage (inside WSL, from the repo root, OpenFOAM 14 sourced):
-    .venv/bin/python -m src.sweep --mesh medium --V 4 --np 6 --jobs 2 [--only d3_pd2.2_h35_staggered ...]
+    .venv/bin/python -m src.sweep --mesh coarse --V 4 --np 8 --jobs 1 --iters 600 [--only d3_pd2.2_h35_staggered ...]
 """
 from __future__ import annotations
 
@@ -143,11 +143,11 @@ def write_csv(root: str, out_csv: str) -> int:
 
 def main(argv=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("--mesh", default="medium")
+    ap.add_argument("--mesh", default="coarse")
     ap.add_argument("--V", type=float, nargs="+", default=[4.0])
-    ap.add_argument("--np", type=int, default=6)
-    ap.add_argument("--jobs", type=int, default=2)
-    ap.add_argument("--iters", type=int, default=1500)
+    ap.add_argument("--np", type=int, default=8)
+    ap.add_argument("--jobs", type=int, default=1)
+    ap.add_argument("--iters", type=int, default=600)
     ap.add_argument("--root", default="work/sweep")
     ap.add_argument("--csv", default="results/sweep.csv")
     ap.add_argument("--only", nargs="*", default=None, help="design names to run")

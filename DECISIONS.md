@@ -22,7 +22,7 @@
   Zukauskas/Bejan constants reported as a second estimate, and Gaddis-Gnielinski (1985) for
   pressure drop. The Gaddis-Gnielinski blending term was verified against the TORCHE
   reference implementation after a web source rendered it incorrectly.
-- 2026-10-12 No prism layers on the pins yet (addLayers false, like the heatedDuct tutorial);
+- 2026-10-12 (SUPERSEDED by the decision below on separate region meshes with prism layers) No prism layers on the pins yet (addLayers false, like the heatedDuct tutorial);
   wall functions handle the near-wall region. To be revisited if the mesh study shows
   sensitivity.
 - 2026-10-12 Local development uses OpenFOAM v1912 (ESI) in the cloud workspace for mesh
@@ -58,12 +58,12 @@ The coarse level (surface refinement 2 plus 4 prism layers) gives 424k fluid + 6
 the mesh study (T4) reports the true counts. Solve time 200 s per 400 iterations on 6 cores is well within budget.
 
 ## D11 (2026-10-13) Sweep mesh level
-Mesh study: coarse 0.49M cells (13 min solve), medium 2.2M (60 min, hit the cap), fine 9.7M (meshing > 60 min, abandoned).
+Mesh study: coarse 0.49M cells (13 min solve), medium 2.2M (60 min, hit the cap), fine 9.7M (meshing did not finish within the 60 min cap, abandoned).
 R changes 3.7 % coarse to medium, dP 25 %. PLAN's medium-to-fine < 3 % criterion cannot be met on this hardware; recorded
-as a limitation, not hidden. Sweep and validation run on the coarse mesh with 700 iterations (T_max moves < 0.03 K between
+as a limitation, not hidden. Sweep runs on the coarse mesh with 600 iterations (validation about 515 to 1500) (T_max moves < 0.03 K between
 400 and 1500 iterations on the centre case). Key designs are re-run on medium afterwards to report the dP offset.
 
 ## D12 (2026-10-13) One case at a time
-Two concurrent 6-process cases each ran ~4x slower than a solo case (519 iterations in 30 min vs ~0.5 s/iteration solo),
+Two concurrent 6-process cases each ran roughly 7x slower than a solo case (519 iterations in 30 min vs ~0.5 s/iteration solo),
 so throughput was worse than sequential. The sweep runs 1 case at a time with 8 processes and 600 iterations (the centre
 case is converged to 0.03 K by 400 iterations). PLAN.md's "2 cases at a time" was based on a benchmark of a different case size.

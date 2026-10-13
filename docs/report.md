@@ -37,7 +37,7 @@ patch), the sides are symmetry planes, the shroud and floor are adiabatic no-sli
 On the stitched pin/base interface `omegaWallFunction` diverged, so that patch uses
 `omega zeroGradient` with `nutUSpaldingWallFunction` and `kqRWallFunction` (DECISIONS.md D9);
 all other walls use `omegaWallFunction`. Each sweep case runs 600 iterations on 8 cores, one case
-at a time (two concurrent cases were 4x slower each, DECISIONS.md D12), 2-16 minutes per case.
+at a time (two concurrent cases were roughly 7x slower each, DECISIONS.md D12), 2-16 minutes per case.
 
 **Verification and validation.** The mesh independence study (Section 3) runs the centre design
 on three refinement levels; the validation (Section 4) compares CFD with the hand calculation at
@@ -55,15 +55,15 @@ Centre design (d = 3 mm, p/d = 2.2, h = 35 mm, staggered) at 4 m/s on three mesh
 
 | mesh | fluid cells | R K/W | dP Pa | note |
 |---|---|---|---|---|
-| coarse | 0.42 M | 0.387 | 143 | converged |
+| coarse | 0.42 M | 0.387 | 143 | 1500 iterations, T drift < 0.03 K between 400 and 1500 |
 | medium | 1.77 M | 0.373 | 107 | stopped at the 60 min cap, residuals ~1e-4 |
-| fine | 7.6 M | n/a | n/a | meshing exceeded the 60 min cap |
+| fine | 7.6 M | n/a | n/a | meshing did not finish within the 60 min cap |
 
 Thermal resistance changes 3.7 % from coarse to medium; pressure drop changes 25 %. The
-fine mesh could not be run on this laptop, so mesh independence is **not demonstrated**: the
+fine mesh was never solved (meshing did not finish within the cap), so mesh independence is **not demonstrated**: the
 plan's medium-to-fine criterion (< 3 %) is not met. dP is not converged (medium is 31 % below the correlation for the centre design) and R is only
 mesh-insensitive for dense arrays (see below). The 36-design sweep therefore ran on
-the coarse mesh, and its absolute dP values should be read as +/- 30 %. Three more designs were re-run on the medium mesh (about 45 minutes each, same 600 iterations) to see how the coarse-mesh results shift:
+the coarse mesh. Absolute dP values carry an offset of the size seen between coarse and medium (roughly 25 % for dense arrays; this is observed, not bounded). Three more designs were re-run on the medium mesh (600 iterations each; the run logs on the laptop give about 45 minutes per case) to see how the coarse-mesh results shift:
 
 | design (4 m/s) | R coarse | R medium | change | dP coarse Pa | dP medium Pa | change | dP hand Pa |
 |---|---|---|---|---|---|---|---|
@@ -87,14 +87,20 @@ R agrees within 5 % and dP within 19 % (target: 30 %). Across the whole 36-desig
 CFD/hand ratio is 1.00-1.13 for R (mean 1.06) but 0.60-2.57 for dP (mean 1.27): the tube-bank
 pressure-drop correlation is reliable for the centre design but not for short, confined
 arrays with few rows, and the CFD includes the 4 mm base step and the shroud contact that the
-correlation does not. The heat balance is closed to the chip power through the fluid-solid
-interface (largest error 0.009 % at 4 m/s).
+correlation does not. In total 18 of the 36 designs have a dP outside +/-30 % of the hand calculation
+(all 2 mm-pin designs at p/d <= 2.8 and most inline designs are high), so the 30 % validation
+criterion is met for the centre design only. The heat flowing through the fluid-solid interface equals the
+chip power to 0.009 % at 4 m/s, but a conjugate solver enforces that nearly by construction; the independent
+air-side enthalpy balance for the centre design is 107-109 W for 100 W (7-9 % high, probably the area-averaged
+outlet temperature, not tested). R is taken from the maximum solid cell temperature in the chip region. The
+hand-calculation Nu correlations are related to each other, so their agreement is not independent evidence.
 
 ## 5. Results of the 36-design sweep
 
-All 36 designs ran and converged in temperature at 4 m/s (coarse mesh, 600 iterations). In 13
-of them the pressure residual stayed above 1e-3 (largest 3.8e-3), so their dP carries extra
-uncertainty. Thermal resistance spans 0.274 to 0.997 K/W and pressure drop 24 to 781 Pa; 10 of
+All 36 designs ran to 600 iterations at 4 m/s (coarse mesh). No case met its residual-control
+target. In 13 of them the pressure residual stayed above 1e-3 (largest 3.8e-3), in four the energy
+residual was above 1e-3 (largest 1.3e-3) and in two the velocity residual was; temperature drift with
+iteration was only checked for the centre design, so all results carry extra uncertainty. Thermal resistance spans 0.274 to 0.997 K/W and pressure drop 24 to 781 Pa; 10 of
 the 36 designs are Pareto-optimal (figures/pareto.png, full table in docs/results.md).
 
 | d mm | p/d | h mm | layout | fin mass g | R K/W | dP Pa |
@@ -107,16 +113,19 @@ the 36 designs are Pareto-optimal (figures/pareto.png, full table in docs/result
 
 - Tall pins (35 mm) dominate: every Pareto design has h = 35 mm.
 - Along the Pareto front, going from the lowest-dP to the lowest-R design lowers R by a factor of 2.9
-  and raises dP by a factor of 28; the last step (0.296 to 0.274 K/W, 7 % lower R) costs 2.3 times the
+  and raises dP by a factor of 28; the last step (0.296 to 0.274 K/W, about 8 % lower R) costs 2.3 times the
   pressure drop.
 - Staggering lowers R by 2-9 % (mean 6 %) at the same d, p/d and h and raises dP by 16-84 % (mean 52 %).
-- Across 2, 4 and 6 m/s, R scales as about V^-0.45 and dP as about V^1.8 for the ten designs that
+- Across 2, 4 and 6 m/s, R scales as about V^-0.46 and dP as about V^1.8 for the ten designs that
   were run at all three speeds.
 
 ## 6. Surrogate model and design-space search
 
 The network was trained on 56 coarse CFD cases (36 designs at 4 m/s plus 10 designs at each of 2 and
-6 m/s). 5-fold cross-validation: R^2 = 0.996 (R) and 0.992 (dP), mean absolute error 1.5 % and 4.5 %.
+6 m/s). Random 5-fold cross-validation: R^2 = 0.996 (R) and 0.992 (dP), mean absolute error 1.5 % and 4.5 %.
+That split leaves the other velocities and neighbouring designs of the same factorial in the training folds, so it is
+optimistic. With whole designs held out (all velocities of a design in the same fold) the figures are R^2 = 0.987 and
+0.970, mean error 2.1 % and 6.8 %, worst case 12 % in R and 28 % in dP (`results/surrogate_grouped_cv.json`).
 
 **The first attempt failed its verification check.** With only d, p/d, h, layout and V as inputs, the
 predicted optimum (d = 3.3 mm, p/d = 1.85) was off in CFD by +12 % in R and -26 % in dP. The number of
@@ -130,15 +139,22 @@ optimum under a 150 Pa budget is d = 3.7 mm, p/d = 1.8, h = 35 mm, inline:
 | R K/W | 0.341 | 0.340 | -0.3 % |
 | dP Pa | 143.4 | 153.0 | +6.7 % |
 
-Both are within the 15 % target; the real pressure drop is 2 % above the 150 Pa budget.
+Both are within the 15 % target; the real pressure drop is 2 % above the 150 Pa budget. This confirms the
+prediction accuracy at one point; it does not show that the design is the optimum. It sits on the edge of the
+design box (p/d = 1.8, h = 35 mm) with 82.3 g of fins, more than any swept design (maximum 80.8 g), so part
+of the answer is an extrapolation to the boundary, and the budget was applied to coarse-mesh dP, which is
+22-24 % higher than medium-mesh dP for dense arrays. On a finer mesh the optimum would move.
 
-## 7. Equal-mass comparison with a plate-fin heat sink
+## 7. Comparison with a plate-fin heat sink of similar mass
 
-A straight plate-fin sink with the same fin mass (73.6 g: nine 1.5 mm plates, 35 mm tall) as the
-lowest-R pin design, same base, same duct and flow: R = 0.379 K/W at 29 Pa, against 0.274 K/W at
-667 Pa for the pin array. The pin array is 28 % lower in thermal resistance, the plate-fin sink needs
-23 times less pressure. Pin fins win on cooling per unit mass; plate fins win when the fan is the limit.
-Only one plate-fin design was simulated, so this is a data point rather than an optimised comparison.
+A straight plate-fin sink (nine 1.5 mm plates, 35 mm tall, 76.5 g of fins, 4 % heavier than the 73.6 g of the
+lowest-R pin design; the plate count is an integer so the masses could not be matched exactly), same base, same duct
+and flow, coarse mesh: R = 0.379 K/W at 29 Pa, against 0.274 K/W at 667 Pa for the pin array. The pin array is
+28 % lower in thermal resistance, the plate-fin sink needs 23 times less pressure. At the lowest-R end the pin
+array wins on cooling; plate fins win when the fan is the limit. The plate-fin sink also dominates several
+mid-range pin designs on both axes (for example 37 Pa / 0.615 K/W, 64 Pa / 0.469 K/W and 85 Pa / 0.418 K/W),
+so pins are not better across the board. Only one plate-fin design was simulated, so this is a data point
+rather than an optimised comparison.
 
 ## 8. Limitations
 
@@ -146,11 +162,14 @@ Only one plate-fin design was simulated, so this is a data point rather than an 
   Re ~ 700-2500 is unsteady in reality, so the steady solution is a time-mean surrogate.
 - The stitched pin/base interface uses `omega zeroGradient` instead of a wall function because
   `omegaWallFunction` diverged there; near-pin turbulence is therefore approximate.
-- No mesh-independence proof: the fine mesh could not be run, and pressure drop changes 25 % from
-  coarse to medium. Treat absolute dP as +/- 30 %; rankings and trends are what the study supports.
+- No mesh-independence proof: the fine mesh was never solved, and pressure drop changes 25 % from
+  coarse to medium. Rankings and trends are what the study is meant to support, but even those were
+  only checked on four designs and the Pareto front would shift on a finer mesh.
+- No case met its residual-control target (Section 5); only the centre design was checked for temperature drift.
 - Pins of 2 mm are only a few cells across on the coarse mesh.
 - Correlation uncertainty is itself 15-25 %; agreement within 30 % is the realistic target.
-- The surrogate was trained on 56 cases on a coarse grid in (d, p/d) and verified at one design.
+- The surrogate was trained on 56 cases on a coarse grid in (d, p/d) and verified at one design; held-out-design
+  errors reach 12 % in R and 28 % in dP.
 - The duct side walls are symmetry planes and the shroud touches the fin tips; a real assembly
   would have a tip gap and wall friction.
 - No contact resistance between chip and base; uniform chip heat flux.
@@ -161,14 +180,15 @@ For a 100 W chip in a 4 m/s shrouded duct, a 35 mm tall pin array of 3.7 mm pins
 (inline) reaches R = 0.34 K/W, a chip rise of 34 K, at 153 Pa (coarse mesh); the 2 mm
 staggered array gets down to 0.27 K/W but at four times the pressure drop. CFD agrees with the hand
 calculation within 5 % in R and 19 % in dP for the centre design, the surrogate predicts held-out
-designs to 1.5 % in R on average, and its optimum was confirmed by CFD. What is not established: grid
+designs to about 2 % in R on average (worst case 12 %), and its prediction at the chosen design was confirmed by CFD
+(this is a check of accuracy at that point, not a proof of optimality). What is not established: grid
 convergence of dP (fine mesh not run) and any comparison with measurements.
 
 ## Resume bullets
 
 - Built a parametric pin-fin heat sink pipeline (CadQuery, OpenFOAM 14 conjugate heat transfer, PyTorch) and simulated 36 designs plus 20 velocity variants; CFD thermal resistance matched hand calculations within 5 % and pressure drop within 19 % on the validation design.
-- Trained a GPU surrogate (RTX 5070) on the CFD sweep (5-fold CV R^2 0.996) to search the design space; diagnosed a failed first optimum (pin-count discretisation), fixed it with geometry features, and confirmed the new optimum in CFD within 0.3 % in R and 7 % in dP.
-- Found that pin arrays beat an equal-mass plate-fin sink by 28 % in thermal resistance at 23x the pressure drop, and documented the mesh-sensitivity and turbulence-model limits of the study.
+- Trained a GPU surrogate (RTX 5070) on the CFD sweep (CV R^2 0.996 random split, 0.987 with whole designs held out) to search the design space; diagnosed a failed first optimum (pin-count discretisation), fixed it with geometry features, and confirmed the new optimum in CFD within 0.3 % in R and 7 % in dP.
+- Found that the best pin array beats a similar-mass (within 4 %) plate-fin sink by 28 % in thermal resistance at 23x the pressure drop, and documented the mesh-sensitivity and turbulence-model limits of the study.
 
 ## References
 

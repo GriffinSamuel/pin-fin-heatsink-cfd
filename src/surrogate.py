@@ -7,8 +7,9 @@ CFD case (see PLAN.md T8).
 PyTorch (CUDA when available) is used for training; a NumPy implementation of the same
 network is the fallback so the pipeline also runs where torch is not installed.
 
-    .venv/bin/python -m src.surrogate --csv results/sweep.csv --out results --docs docs \
-        --dp-budget 150 --verify-out work/cases/surrogate_optimum
+    .venv/bin/python -m src.surrogate --csv results/sweep.csv --out results --dp-budget 150
+
+(docs/surrogate.md and figures/surrogate_parity.png were written by hand/ad hoc from the outputs; this script does not regenerate them.)
 """
 from __future__ import annotations
 
@@ -144,12 +145,20 @@ def fit_model(X, Y, epochs=3000, seed=0, device=None):
     return model.predict, "numpy"
 
 
-def cross_validate(df: pd.DataFrame, k: int = 5, epochs: int = 3000, seed: int = 0) -> dict:
+def cross_validate(df: pd.DataFrame, k: int = 5, epochs: int = 3000, seed: int = 0, grouped: bool = False) -> dict:
+    """k-fold CV. grouped=True keeps all velocities of one design in the same fold (held-out designs)."""
     d = frame(df)
     X, Y = d[FEATURES].to_numpy(float), d[TARGETS].to_numpy(float)
     rng = np.random.default_rng(seed)
-    idx = rng.permutation(len(X))
-    folds = np.array_split(idx, k)
+    if grouped:
+        key = d[["d", "pd", "h", "layout"]].astype(str).agg("|".join, axis=1)
+        uniq = np.array(sorted(set(key)))
+        uniq = uniq[rng.permutation(len(uniq))]
+        idx = np.arange(len(X))
+        folds = [np.where(key.isin(g))[0] for g in np.array_split(uniq, k)]
+    else:
+        idx = rng.permutation(len(X))
+        folds = np.array_split(idx, k)
     pred = np.zeros_like(Y)
     for f in folds:
         tr = np.setdiff1d(idx, f)
@@ -162,6 +171,7 @@ def cross_validate(df: pd.DataFrame, k: int = 5, epochs: int = 3000, seed: int =
         ss_res, ss_tot = ((y - p) ** 2).sum(), ((y - y.mean()) ** 2).sum()
         out[f"cv_R2_{name}"] = float(1 - ss_res / ss_tot)
         out[f"cv_mape_{name}_pct"] = float(np.mean(np.abs(p / y - 1)) * 100)
+        out[f"cv_maxerr_{name}_pct"] = float(np.max(np.abs(p / y - 1)) * 100)
     out["cv_pred"] = np.exp(pred).tolist()
     return out
 
@@ -198,6 +208,8 @@ def main(argv=None):
     ap.add_argument("--V", type=float, default=4.0)
     ap.add_argument("--epochs", type=int, default=3000)
     ap.add_argument("--k", type=int, default=5)
+    ap.add_argument("--grouped-only", action="store_true",
+                    help="only run cross-validation with whole designs held out; writes results/surrogate_grouped_cv.json")
     a = ap.parse_args(argv)
     df = pd.read_csv(a.csv)
     if "status" in df:
@@ -207,6 +219,15 @@ def main(argv=None):
         df = df[df["mesh"] == "coarse"]
     df = df.reset_index(drop=True)
     t0 = time.time()
+    if a.grouped_only:
+        g = cross_validate(df, k=a.k, epochs=a.epochs, grouped=True)
+        g.pop("cv_pred")
+        g["backend"] = "torch" if HAVE_TORCH else "numpy"
+        os.makedirs(a.out, exist_ok=True)
+        with open(os.path.join(a.out, "surrogate_grouped_cv.json"), "w") as f:
+            json.dump(g, f, indent=2)
+        print(json.dumps(g, indent=1))
+        return
     cv = cross_validate(df, k=a.k, epochs=a.epochs)
     d = frame(df)
     X, Y = d[FEATURES].to_numpy(float), d[TARGETS].to_numpy(float)
@@ -214,7 +235,7 @@ def main(argv=None):
     predict, dev = fit_model(sx.t(X), sy.t(Y), epochs=a.epochs)
     opt = optimise(predict, sx, sy, a.V, a.dp_budget)
     summary = {"device": str(dev), "train_time_s": time.time() - t0, "n_cases": int(len(df)),
-               "features": FEATURES, "targets": "log(R), log(dP)", "architecture": "MLP 5-32-32-2 tanh, Adam, 3000 epochs",
+               "features": FEATURES, "targets": "log(R), log(dP)", "architecture": "MLP 7-32-32-2 tanh (7 inputs, see features), Adam, 3000 epochs",
                **{k: v for k, v in cv.items() if k != "cv_pred"}, "dp_budget_Pa": a.dp_budget, "optimum": opt}
     os.makedirs(a.out, exist_ok=True); os.makedirs(a.docs, exist_ok=True)
     with open(os.path.join(a.out, "surrogate.json"), "w") as f:

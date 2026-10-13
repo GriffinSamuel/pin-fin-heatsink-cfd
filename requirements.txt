@@ -7,3 +7,4 @@ scikit-learn
 trimesh
 pyvista
 pytest
+# torch   # optional: GPU surrogate (CUDA build from pytorch.org); without it src/surrogate.py uses its NumPy fallback

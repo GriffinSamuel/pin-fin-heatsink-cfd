@@ -12,7 +12,7 @@
     "log_area"
   ],
   "targets": "log(R), log(dP)",
-  "architecture": "MLP 5-32-32-2 tanh, Adam, 3000 epochs",
+  "architecture": "MLP 7-32-32-2 tanh (7 inputs, see features), Adam, 3000 epochs",
   "k": 5,
   "n": 56,
   "cv_R2_R": 0.9962768327018057,

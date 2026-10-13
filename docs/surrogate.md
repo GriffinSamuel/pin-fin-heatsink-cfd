@@ -22,7 +22,7 @@ dP missed the 15 % target. Cause: the number of pins is an integer, and it jumps
 
 ## Attempt 2: added geometry features (passed)
 
-Two inputs computed by the geometry generator were added: the number of pin rows along the flow, and the log of the total wetted pin area. With these, the verification point from attempt 1, held out of training, is predicted to R 0.365 K/W (4 % off) and dP 115.5 Pa (6 % off). Cross-validation is unchanged (R^2 0.996 for R, 0.992 for dP; mean absolute error 1.5 % and 4.5 %).
+Two inputs computed by the geometry generator were added: the number of pin rows along the flow, and the log of the total wetted pin area. With these, the verification point from attempt 1, held out of training, is predicted to R 0.365 K/W (4 % off) and dP 115.5 Pa (6 % off). Random cross-validation is essentially unchanged for R (R^2 0.996, mean error 1.5 %); for dP it is slightly worse (R^2 0.995 to 0.992, mean error 4.1 % to 4.5 %).
 
 The retrained model's optimum is d = 3.7 mm, p/d = 1.8, h = 35 mm, inline. A new CFD case at that design gave:
 
@@ -33,15 +33,22 @@ The retrained model's optimum is d = 3.7 mm, p/d = 1.8, h = 35 mm, inline. A new
 
 Both are inside the 15 % target. The real pressure drop (153 Pa) is 2 % above the 150 Pa budget, so the budget was met by the prediction but not quite by the verification case.
 
+## Cross-validation with whole designs held out
+
+The random 5-fold split above puts other velocities of the same design, and the neighbours in the 3 x 3 x 2 x 2 factorial, in the training folds. Holding out all velocities of a design together (`python -m src.surrogate --grouped-only`, results/surrogate_grouped_cv.json) gives R^2 0.987 (R) and 0.970 (dP), mean error 2.1 % and 6.8 %, and worst-case errors of 12 % in R and 28 % in dP. That is the more honest estimate of accuracy at an unseen design.
+
 ## What the optimum buys
 
 Compared with the nearest swept designs at 4 m/s (inline, p/d = 1.8, h = 35 mm), the surrogate optimum has lower R than d = 4 mm (0.369 K/W at 117 Pa) and about 25 % lower pressure drop than d = 3 mm (0.316 K/W at 203 Pa), filling the gap between them.
 
 ## Limits
 
+- The CFD check confirms the prediction at one point. It does not show that the design is optimal: the search is only as good as the model, and the optimum sits on the edge of the design box (p/d = 1.8, h = 35 mm) with 82.3 g of fins, above the heaviest swept design (80.8 g).
+- The CFD pressure drop at the optimum (153 Pa) is above the 150 Pa budget, and the budget is applied to coarse-mesh dP, which for dense arrays is 22-24 % above medium-mesh dP.
+- The architecture in `results/surrogate.json` is 7 inputs (see `features`), two hidden layers of 32, two outputs.
 - The model was trained on coarse-mesh CFD. Medium-mesh dP is 4-25 % lower than coarse and sparse arrays also move 11 % in R (docs/mesh_study.md), so absolute values carry that offset; the trends and the ranking of designs are what the model captures.
 - Only the 10 best designs were simulated at 2 and 6 m/s, so the velocity dependence is learned from a subset of the design space; the optimum is reported at 4 m/s only.
 - With 56 points, the design space is sparsely sampled; the verification case is the evidence that the optimum is real, not the cross-validation score alone.
 - The first attempt is kept here deliberately: a good cross-validation score did not guarantee a good prediction between grid points.
 
-Files: results/T8/ (attempt 1), results/T8b/ (attempt 2), figures/surrogate_parity.png.
+Files: results/T8/ (attempt 1), results/T8b/ (attempt 2), figures/surrogate_parity.png. The parity figure and this document were made from the outputs by hand, not by `make surrogate`.

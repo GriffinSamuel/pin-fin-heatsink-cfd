@@ -2,25 +2,31 @@
 
 Centre design (d = 3 mm, p/d = 2.2, h = 35 mm, staggered) at 4 m/s, three refinement levels
 (background 3 mm cells; pin-surface refinement level 2 / 3 / 4 = 0.75 / 0.375 / 0.19 mm; 4 prism layers on the
-fluid side of every level). 6 MPI processes on a 14-core laptop.
+fluid side of every level). 6 MPI processes on a 12-core laptop with 19 GB of memory.
 
 | mesh | fluid cells | solid cells | T_chip,max C | R K/W | dP Pa | iterations | meshing | solve | status |
 |---|---|---|---|---|---|---|---|---|---|
 | coarse | 424,486 | 64,132 | 63.74 | 0.3872 | 143.0 | 1500 | 2.5 min | 13.3 min | converged (T_max drift < 0.03 K between 400 and 1500 iterations) |
 | medium | 1,770,572 | 419,592 | 62.27 | 0.3728 | 107.0 | 1236 | 12.5 min | 59.7 min | hit the 60 min cap (residuals p 3.6e-4, U 1.4e-4, h 1.4e-4) |
-| fine | 7,591,284 | 2,070,556 | n/a | n/a | n/a | 0 | > 36 min for the fluid mesh alone | not run | meshing exceeded the 60 min cap |
+| fine | 7,591,284 | 2,070,556 | n/a | n/a | n/a | 0 | not recorded | not run | meshing did not finish within the 60 min cap (status `failed`) |
 
 Hand calculation for reference: R = 0.378 K/W, dP = 155 Pa.
+
+Notes on the table: the fine-level cell counts are as recorded in `results/mesh_study.csv`; the meshing never completed, so
+treat them as indicative only. The meshing times in that CSV are all 0.0 (not captured), so the 2.5 and 12.5 min meshing times
+for coarse and medium come from the run logs on the laptop and cannot be re-checked from the repository. No `checkMesh` logs are
+kept in the repository either; the CSVs only record that checkMesh passed (`mesh_ok_fluid`, `mesh_ok_solid`).
 
 ## Result
 
 - Coarse to medium: R changes by 3.7 % (0.387 to 0.373), dP by 25 % (143 to 107 Pa).
-- Medium to fine: **not measured**. The 9.7-million-cell fine mesh took longer than the 60 minute meshing cap and a
-  single fine solution would need many hours on this laptop, so the PLAN criterion "medium to fine change < 3 %" is
-  **not met**.
-- For the centre design thermal resistance is nearly mesh-insensitive (4 %) and sits within 2.5 % (coarse) and 1.4 % (medium) of the hand
+- Medium to fine: **not measured**. Meshing the fine level (about 9.7 million cells in total) did not finish within the 60 minute
+  cap and a single fine solution would need many hours on this laptop, so the PLAN criterion "medium to fine change < 3 %" is
+  **not met**. The coarse mesh (0.49 M cells in total, 0.42 M fluid) also exceeds the PLAN's 400k-cell target for T3 (DECISIONS D10).
+- For the centre design thermal resistance changes 3.7 % between coarse and medium and sits within 2.6 % (coarse) and 1.3 % (medium) of the hand
   calculation. Pressure drop is *not* mesh-converged: it falls as the mesh is refined and the medium value is 31 % below
-  the correlation. Absolute dP values from the sweep are therefore uncertain by about +/-30 %.
+  the correlation. Absolute dP values from the sweep are therefore uncertain by something like 25-30 % for dense arrays; this is an observed offset
+  between two meshes, not a bound, because dP was still falling with refinement and no finer level exists.
 
 ## Consequence for the sweep (DECISIONS.md D11)
 
