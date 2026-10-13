@@ -139,8 +139,8 @@ mergePatchPairs
 # ----------------------------------------------------------------- snappyHexMesh
 
 def snappy_dict(H: float, level: dict, flavour: str) -> str:
-    zone_mode = ("mode        insidePoint;\n            insidePoint (0.030 0.030 0.002);" if flavour == "org"
-                 else "cellZoneInside insidePoint;\n            insidePoint (0.030 0.030 0.002);")
+    zone_mode = ("mode        insidePoint;\n            insidePoint (0.0305 0.0305 0.0021);" if flavour == "org"
+                 else "cellZoneInside insidePoint;\n            insidePoint (0.0305 0.0305 0.0021);")
     inside_key = "insidePoint" if flavour == "org" else "locationInMesh"
     lvl_key = "level" if flavour == "org" else "levels"
     tri_type = "triSurface" if flavour == "org" else "triSurfaceMesh"
@@ -151,7 +151,7 @@ def snappy_dict(H: float, level: dict, flavour: str) -> str:
                "    minDeterminant 0.001;\n    minFaceWeight 0.02;\n    minVolRatio 0.01;\n    minTriangleTwist -1;\n"
                "    nSmoothScale 4;\n    errorReduction 0.75;\n    relaxed\n    {\n        maxNonOrtho 75;\n    }\n}")
     include = '#includeEtc "caseDicts/mesh/generation/snappyHexMeshDict.cfg"' if flavour == "org" else ""
-    hmid = H / 2
+    hmid = H / 2 + 0.0004          # off the background cell faces
     return hdr("dictionary", "snappyHexMeshDict") + f"""
 {include}
 
@@ -219,7 +219,7 @@ castellatedMeshControls
         }}
     }}
 
-    {inside_key} (-0.030 0.030 {hmid:.4f});
+    {inside_key} (-0.0305 0.0305 {hmid:.4f});
 }}
 
 snapControls
@@ -478,9 +478,9 @@ PIMPLE
     residualControl
     {
         p               1e-4;
-        U               1e-5;
-        h               1e-5;
-        "(k|omega)"     1e-4;
+        U               1e-4;
+        h               5e-5;
+        "(k|omega)"     1e-3;
     }
 }
 
@@ -548,6 +548,10 @@ solvers
 PIMPLE
 {
     nNonOrthogonalCorrectors 1;
+    residualControl
+    {
+        e               1e-5;
+    }
 }
 
 relaxationFactors
@@ -615,9 +619,9 @@ cd ${0%/*} || exit 1    # Run from this directory
 
 rm -rf constant/polyMesh/sets
 
-runApplication blockMesh
-runApplication snappyHexMesh
-runApplication splitMeshRegions -cellZones all -defaultRegion fluid
+runApplication blockMesh || exit 1
+runApplication snappyHexMesh || exit 1
+runApplication splitMeshRegions -cellZones all -defaultRegion fluid || exit 1
 runApplication -s fluid checkMesh -region fluid -constant
 runApplication -s solid checkMesh -region solid -constant
 """
@@ -646,8 +650,8 @@ cd ${{0%/*}} || exit 1    # Run from this directory
 
 ./Allmesh || exit 1
 
-runApplication decomposePar -allRegions
-runParallel foamMultiRun
+runApplication decomposePar -allRegions || exit 1
+runParallel foamMultiRun || exit 1
 runApplication reconstructPar -allRegions -latestTime
 rm -rf processor*
 """
@@ -688,7 +692,7 @@ def write_case(spec: HeatSinkSpec, V: float, mesh: str, out: str, n_proc: int = 
       "snGradSchemes { default corrected; }\n")
     w(os.path.join(out, "system", "decomposeParDict"), hdr("dictionary", "decomposeParDict") +
       f"\nnumberOfSubdomains {n_proc};\n\nmethod          scotch;\n")
-    w(os.path.join(out, "system", "functions"), FUNCTIONS)
+    w(os.path.join(out, "system", "functions"), hdr("dictionary", "functions", "system") + FUNCTIONS)
     w(os.path.join(out, "system", "fluid", "fvSchemes"), hdr("dictionary", "fvSchemes", "system/fluid") + FLUID_SCHEMES)
     w(os.path.join(out, "system", "fluid", "fvSolution"), hdr("dictionary", "fvSolution", "system/fluid") + FLUID_SOLUTION)
     w(os.path.join(out, "system", "solid", "fvSchemes"), hdr("dictionary", "fvSchemes", "system/solid") + SOLID_SCHEMES)

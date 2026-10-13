@@ -37,10 +37,43 @@ def _rows(path: str) -> list[list[str]]:
     return out
 
 
-def _find(case: str, *keys: str) -> list[str]:
-    """All .dat files whose path contains every key (keys are matched case-sensitively)."""
-    files = glob.glob(os.path.join(case, "postProcessing", "**", "*.dat"), recursive=True)
-    return sorted(f for f in files if all(k in f for k in keys))
+def _parse_fo_dir(name: str):
+    """'patchAverage(p,region=fluid,patch=inlet)' -> ('patchAverage', {'region': 'fluid', 'patch': 'inlet'}, ['p'])"""
+    if "(" not in name:
+        return name, {}, []
+    func, rest = name.split("(", 1)
+    rest = rest.rstrip(")")
+    kw, pos = {}, []
+    for tok in [t.strip() for t in rest.split(",") if t.strip()]:
+        if "=" in tok:
+            k, v = tok.split("=", 1)
+            kw[k.strip()] = v.strip()
+        else:
+            pos.append(tok)
+    return func, kw, pos
+
+
+def _find(case: str, func: str, region: str | None = None, patch: str | None = None,
+          field: str | None = None) -> list[str]:
+    """All .dat files of function objects matching the function name, region, patch and field."""
+    out = []
+    for f in glob.glob(os.path.join(case, "postProcessing", "**", "*.dat"), recursive=True):
+        parts = f.split(os.sep)
+        for part in parts:
+            if not part.startswith(func + "("):
+                continue
+            fn, kw, pos = _parse_fo_dir(part)
+            if fn != func:
+                continue
+            if region is not None and kw.get("region") != region:
+                continue
+            if patch is not None and kw.get("patch") != patch:
+                continue
+            if field is not None and field not in pos:
+                continue
+            out.append(f)
+            break
+    return sorted(out)
 
 
 def parse_case(case: str) -> dict:
@@ -50,8 +83,8 @@ def parse_case(case: str) -> dict:
         with open(meta_path) as f:
             res["meta"] = json.load(f)
 
-    def scalar(keys, col=1, which="last"):
-        files = _find(case, *keys)
+    def scalar(func, region, field, patch=None, col=1):
+        files = _find(case, func, region=region, patch=patch, field=field)
         if not files:
             return None
         rows = _rows(files[-1])
@@ -60,25 +93,25 @@ def parse_case(case: str) -> dict:
         return float(rows[-1][col])
 
     # temperatures
-    res["T_solid_max_K"] = scalar(["cellMax", "solid", "T"])
-    res["T_solid_min_K"] = scalar(["cellMin", "solid", "T"])
-    res["T_fluid_max_K"] = scalar(["cellMax", "fluid", "T"])
-    res["T_chip_avg_K"] = scalar(["patchAverage", "solid", "chip", "T"])
-    res["T_out_K"] = scalar(["patchAverage", "fluid", "outlet", "T"])
-    res["T_in_K"] = scalar(["patchAverage", "fluid", "inlet", "T"])
+    res["T_solid_max_K"] = scalar("cellMax", "solid", "T")
+    res["T_solid_min_K"] = scalar("cellMin", "solid", "T")
+    res["T_fluid_max_K"] = scalar("cellMax", "fluid", "T")
+    res["T_chip_avg_K"] = scalar("patchAverage", "solid", "T", patch="chip")
+    res["T_out_K"] = scalar("patchAverage", "fluid", "T", patch="outlet")
+    res["T_in_K"] = scalar("patchAverage", "fluid", "T", patch="inlet")
     # pressures and mass flow
-    p_in = scalar(["patchAverage", "fluid", "inlet", "p"])
-    p_out = scalar(["patchAverage", "fluid", "outlet", "p"])
+    p_in = scalar("patchAverage", "fluid", "p", patch="inlet")
+    p_out = scalar("patchAverage", "fluid", "p", patch="outlet")
     res["p_in_Pa"], res["p_out_Pa"] = p_in, p_out
     res["dP_Pa"] = (p_in - p_out) if (p_in is not None and p_out is not None) else None
-    m_in = scalar(["patchFlowRate", "fluid", "inlet", "phi"])
-    m_out = scalar(["patchFlowRate", "fluid", "outlet", "phi"])
+    m_in = scalar("patchFlowRate", "fluid", "phi", patch="inlet")
+    m_out = scalar("patchFlowRate", "fluid", "phi", patch="outlet")
     res["m_dot_in_kg_s"] = -m_in if m_in is not None else None    # phi is outward-positive
     res["m_dot_out_kg_s"] = m_out
 
     # heat flux integrals: wallHeatFlux writes one row per patch per time
     for region in ("solid", "fluid"):
-        files = _find(case, "wallHeatFlux", region)
+        files = _find(case, "wallHeatFlux", region=region)
         if not files:
             continue
         rows = _rows(files[-1])
@@ -104,7 +137,7 @@ def parse_case(case: str) -> dict:
 
     # residuals (initial residual of the last iteration)
     for region in ("fluid", "solid"):
-        files = _find(case, "residuals", region)
+        files = _find(case, "residuals", region=region)
         if files:
             with open(files[-1]) as f:
                 header = [l for l in f if l.startswith("#")]
