@@ -23,6 +23,17 @@ surrogate model's optimum, confirmed with its own CFD run.*
 | CFD vs hand calculation (centre design, 2/4/6 m/s) | R within 5 %, dP within 19 % |
 | Surrogate (56 CFD cases, 5-fold CV) | R^2 0.996 for R, 0.992 for dP; optimum verified by CFD to 0.3 % in R, 7 % in dP |
 
+## Renders
+
+Surrogate-optimum design (d = 3.7 mm, p/d = 1.8, h = 35 mm, inline), 4 m/s, coarse mesh:
+
+| Solid temperature | Streamlines |
+|---|---|
+| ![solid temperature](figures/renders/d3.7_pd1.8_h35_inline_V4_coarse_solid_T.png) | ![streamlines](figures/renders/d3.7_pd1.8_h35_inline_V4_coarse_streamlines.png) |
+
+More renders (temperature and pressure mid-planes, speed slice, mesh close-up; also the lowest-R and
+highest-R designs) are in `figures/renders/`.
+
 ## What is and is not established
 
 - **Mesh independence is not demonstrated.** For the centre design, coarse to medium changes R by 3.7 % and
