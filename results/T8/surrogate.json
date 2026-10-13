@@ -1,0 +1,31 @@
+{
+  "device": "cuda",
+  "train_time_s": 39.204731941223145,
+  "n_cases": 56,
+  "features": [
+    "d",
+    "pd",
+    "h",
+    "layout_staggered",
+    "V"
+  ],
+  "targets": "log(R), log(dP)",
+  "architecture": "MLP 5-32-32-2 tanh, Adam, 3000 epochs",
+  "k": 5,
+  "n": 56,
+  "cv_R2_R": 0.994043044116263,
+  "cv_mape_R_pct": 1.600875487561536,
+  "cv_R2_dP": 0.9948525224054011,
+  "cv_mape_dP_pct": 4.127781899912142,
+  "dp_budget_Pa": 150.0,
+  "optimum": {
+    "d": 3.3,
+    "pd": 1.85,
+    "h": 35.0,
+    "layout": "inline",
+    "V": 4.0,
+    "R_pred": 0.3389886224718509,
+    "dP_pred": 147.72332439635218,
+    "grid_points": 14112
+  }
+}

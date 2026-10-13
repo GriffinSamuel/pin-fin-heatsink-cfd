@@ -7,7 +7,7 @@
 - [x] T5 Validation  DONE 2026-10-13 (coarse mesh): CFD vs hand calc at 2/4/6 m/s: R 0.521/0.387/0.337 vs 0.523/0.378/0.321 K/W (within 5 %), dP 41/143/303 vs 35/155/353 Pa (within 19 %). 2 and 4 m/s cases stopped at ~515 iterations by the time cap (T drift negligible); running two 6-process cases at once was ~4x slower per case, so the sweep runs one case at a time
 - [x] T6 Sweep runner  DONE 2026-10-13: 36/36 designs at 4 m/s ok (coarse mesh, 600 its, one case at a time, ~3-7 min each), interface heat balance <0.02 %; plus 20 extra runs at 2 and 6 m/s for the 10 Pareto designs (56 rows in results/T6/sweep.csv). Caveat: p residuals up to 3.8e-3 in 15 cases (T converged)
 - [x] T7 Analysis and Pareto front  DONE 2026-10-13: 10 of 36 designs Pareto-optimal; R 0.274-0.796 K/W, dP 24-667 Pa (docs/results.md, figures/pareto.png etc.). Equal-mass plate-fin (9 plates, t=1.5 mm, h=35, 73.6 g, same as best pin design): R 0.379 K/W, dP 29 Pa vs pin design 0.274 K/W, 667 Pa (pin wins on R by 28 %, plate wins on dP by 23x)
-- [ ] T8 Surrogate model on GPU
+- [x] T8 Surrogate model on GPU  DONE 2026-10-13: MLP on RTX 5070, 56 CFD cases, 5-fold CV R2 0.996 (R) / 0.992 (dP). Attempt 1 (raw d,pd,h,layout,V) FAILED the check: CFD at predicted optimum d3.3/pd1.85 gave R +12 %, dP -26 % (integer pin-count jumps). Attempt 2 (+n_rows, wetted area features) optimum d3.7/pd1.8/h35 inline: R 0.3414 pred vs 0.3403 CFD (-0.3 %), dP 143.4 vs 153.0 (+6.7 %). See docs/surrogate.md
 - [ ] T9 Visuals
 - [ ] T10 Report and repo polish
 - [ ] T11 Independent audit
