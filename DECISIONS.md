@@ -56,3 +56,9 @@ Consequence: near-pin turbulence is approximate; validated against correlations 
 The coarse level (surface refinement 2 plus 4 prism layers) gives 424k fluid + 64k solid cells (0.49M), above the
 <400k target in PLAN.md. Accepted: the extra cells are the prism layers, which are needed for y+ of 1-5 at the pins;
 the mesh study (T4) reports the true counts. Solve time 200 s per 400 iterations on 6 cores is well within budget.
+
+## D11 (2026-10-13) Sweep mesh level
+Mesh study: coarse 0.49M cells (13 min solve), medium 2.2M (60 min, hit the cap), fine 9.7M (meshing > 60 min, abandoned).
+R changes 3.7 % coarse to medium, dP 25 %. PLAN's medium-to-fine < 3 % criterion cannot be met on this hardware; recorded
+as a limitation, not hidden. Sweep and validation run on the coarse mesh with 700 iterations (T_max moves < 0.03 K between
+400 and 1500 iterations on the centre case). Key designs are re-run on medium afterwards to report the dP offset.

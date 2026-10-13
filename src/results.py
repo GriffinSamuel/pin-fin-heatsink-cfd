@@ -134,6 +134,12 @@ def parse_case(case: str) -> dict:
         res["R_chip_avg_K_W"] = (res["T_chip_avg_K"] - T_IN) / q_used
     if res["T_out_K"] is not None and res["m_dot_in_kg_s"]:
         res["Q_energy_balance_W"] = res["m_dot_in_kg_s"] * 1006.0 * (res["T_out_K"] - T_IN)
+    # Heat leaving the solid through the fluid/solid interface: the primary energy check. The air-side balance above
+    # uses the area-averaged (not flux-weighted) outlet temperature and therefore over-estimates by ~8 %.
+    qi = res.get("Q_fluid_interface_on_heatsink_W")
+    res["Q_interface_W"] = qi
+    if qi is not None and q_chip:
+        res["interface_balance_err_pct"] = 100.0 * (qi - abs(q_chip)) / abs(q_chip)
 
     # residuals (initial residual of the last iteration)
     for region in ("fluid", "solid"):

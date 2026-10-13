@@ -34,7 +34,7 @@ LAYOUTS = ["inline", "staggered"]
 MIRROR = "/mnt/c/Users/Griff/Projects/heatsink-cfd/results"
 
 COLUMNS = ["name", "d", "pd", "h", "layout", "V", "mesh", "status", "n_pins", "n_rows", "fin_mass_g",
-           "T_solid_max_K", "R_max_K_W", "R_chip_avg_K_W", "dP_Pa", "Q_chip_W", "Q_energy_balance_W",
+           "T_solid_max_K", "R_max_K_W", "R_chip_avg_K_W", "dP_Pa", "Q_chip_W", "Q_interface_W", "interface_balance_err_pct",
            "m_dot_in_kg_s", "T_out_K", "iterations", "solver_time_s", "mesh_time_s", "cells_fluid",
            "cells_solid", "mesh_ok_fluid", "mesh_ok_solid", "analytic_R_K_W", "analytic_dP_Pa",
            "res_U", "res_h", "res_p", "wall_s", "fail_reason"]
