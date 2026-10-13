@@ -28,13 +28,25 @@ try:
 except Exception:  # pragma: no cover
     HAVE_TORCH = False
 
-FEATURES = ["d", "pd", "h", "layout_staggered", "V"]
+# Geometry-derived features: the pin count along the flow (n_rows) and the wetted pin area change in
+# integer steps with (d, p/d), so a model of the raw design variables alone cannot see those jumps.
+FEATURES = ["d", "pd", "h", "layout_staggered", "V", "n_rows", "log_area"]
 TARGETS = ["log_R", "log_dP"]
 BOUNDS = {"d": (2.0, 4.0), "pd": (1.8, 2.8), "h": (20.0, 35.0)}
 
 
+def geom_features(d, pd_, h, layout):
+    """n_rows (pins in flow direction) and log of wetted pin side area, from the real geometry generator."""
+    from src.geometry import HeatSinkSpec, metadata
+    m = metadata(HeatSinkSpec(d=float(d), pd=float(pd_), h=float(h), layout=str(layout)))
+    return float(m["n_rows"]), math.log(m["n_pins"] * math.pi * float(d) * float(h))
+
+
 def frame(df: pd.DataFrame) -> pd.DataFrame:
     d = df.copy()
+    g = [geom_features(r.d, r.pd, r.h, r.layout) for r in d.itertuples()]
+    d["n_rows"] = [x[0] for x in g]
+    d["log_area"] = [x[1] for x in g]
     d["layout_staggered"] = (d["layout"] == "staggered").astype(float)
     if "V" not in d:
         d["V"] = 4.0
@@ -159,7 +171,14 @@ def optimise(predict, sx, sy, V: float, dp_budget: float) -> dict | None:
     ds = np.round(np.arange(BOUNDS["d"][0], BOUNDS["d"][1] + 1e-9, 0.1), 1)
     pds = np.round(np.arange(BOUNDS["pd"][0], BOUNDS["pd"][1] + 1e-9, 0.05), 2)
     hs = np.arange(BOUNDS["h"][0], BOUNDS["h"][1] + 1e-9, 1.0)
-    grid = np.array([[d, pd_, h, lay, V] for d in ds for pd_ in pds for h in hs for lay in (0.0, 1.0)])
+    grid = []
+    for d in ds:
+        for pd_ in pds:
+            for h in hs:
+                for lay in (0.0, 1.0):
+                    nr, la = geom_features(d, pd_, h, "staggered" if lay else "inline")
+                    grid.append([d, pd_, h, lay, V, nr, la])
+    grid = np.array(grid)
     P = np.exp(sy.inv(predict(sx.t(grid))))
     ok = P[:, 1] <= dp_budget
     if not ok.any():
