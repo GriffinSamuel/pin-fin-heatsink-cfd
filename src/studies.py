@@ -150,13 +150,15 @@ def main(argv=None):
     ap.add_argument("--match-mass", type=float, default=51.4)
     ap.add_argument("--h", type=float, default=35.0)
     ap.add_argument("--t", type=float, default=1.5)
+    ap.add_argument("--mesh-timeout", type=int, default=1800)
+    ap.add_argument("--solve-timeout", type=int, default=3600)
     a = ap.parse_args(argv)
     if a.what == "mesh":
         mesh_study(a.np, a.jobs, a.iters, tuple(a.levels))
     elif a.what == "custom":
         spec = HeatSinkSpec(a.d, a.pd, a.h, a.layout)
         os.makedirs(a.root, exist_ok=True)
-        r = run_one(spec, a.V, a.mesh, a.np, a.iters, a.root, 1800, 3600)
+        r = run_one(spec, a.V, a.mesh, a.np, a.iters, a.root, a.mesh_timeout, a.solve_timeout)
         an = analytic_solve(metadata(spec), a.V)
         out = {"spec": [a.d, a.pd, a.h, a.layout], "V": a.V, "mesh": a.mesh, "R_cfd": r.get("R_max_K_W"), "dP_cfd": r.get("dP_Pa"),
                "R_hand": an["R_total_K_W"], "dP_hand": an["dP_Pa"], "status": r.get("status")}
