@@ -1,0 +1,36 @@
+.venv/bin/python -m pytest -q tests
+...........                                                              [100%]
+11 passed in 55.89s
+.venv/bin/python -m src.geometry --d 3 --pd 2.2 --h 35 --layout staggered
+d3_pd2.2_h35_staggered: 77 pins, 9 rows, CAD volume 33449.8 mm^3 (analytic 33449.8), fin mass 51.4 g -> work/geom/d3_pd2.2_h35_staggered
+.venv/bin/python -m src.analytic --d 3 --pd 2.2 --h 35 --layout staggered
+77 pins in 9 rows, fin mass 51.4 g
+   V  Re_max     Nu      h  eta_f  R_conv  R_base  R_tot  R_zuk  T_chip      dP
+ 2.0     683   15.3    143   0.73   0.421   0.102  0.523  0.515    77.3    34.6
+ 4.0    1440   24.5    224   0.65   0.277   0.100  0.378  0.386    62.8   154.9
+ 6.0    2203   32.2    290   0.59   0.222   0.099  0.321  0.330    57.1   353.2
+.venv/bin/python -m src.make_case --d 3 --pd 2.2 --h 35 --layout staggered --V 4 --mesh coarse --np 8 --iters 300 --out work/cases/center_coarse
+wrote work/cases/center_coarse: d3_pd2.2_h35_staggered V=4.0 mesh=coarse np=8 iters=300; analytic R=0.378 K/W dP=154.9 Pa
+cd work/cases/center_coarse && ./Allrun
+Running blockMesh on /home/griff/fresh_check/work/cases/center_coarse
+Running blockMesh on /home/griff/fresh_check/work/cases/center_coarse
+Running snappyHexMesh on /home/griff/fresh_check/work/cases/center_coarse
+Running snappyHexMesh on /home/griff/fresh_check/work/cases/center_coarse
+Running createNonConformalCouples on /home/griff/fresh_check/work/cases/center_coarse
+Running checkMesh on /home/griff/fresh_check/work/cases/center_coarse
+Running checkMesh on /home/griff/fresh_check/work/cases/center_coarse
+Running decomposePar on /home/griff/fresh_check/work/cases/center_coarse
+Running foamMultiRun in parallel on /home/griff/fresh_check/work/cases/center_coarse using 8 processes
+Running reconstructPar on /home/griff/fresh_check/work/cases/center_coarse
+.venv/bin/python -m src.results work/cases/center_coarse
+{
+ "T_solid_max_K": 337.027817,
+ "R_max_K_W": 0.3886055125707653,
+ "dP_Pa": 143.58000000000175,
+ "Q_chip_W": 100.04443,
+ "Q_energy_balance_W": 108.07470753012213,
+ "m_dot_in_kg_s": 0.0109503577,
+ "iterations": 300,
+ "solver_time_s": 148.36308,
+ "mesh_cells_total": null
+}

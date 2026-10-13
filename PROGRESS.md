@@ -9,5 +9,5 @@
 - [x] T7 Analysis and Pareto front  DONE 2026-10-13: 10 of 36 designs Pareto-optimal; R 0.274-0.796 K/W, dP 24-667 Pa (docs/results.md, figures/pareto.png etc.). Equal-mass plate-fin (9 plates, t=1.5 mm, h=35, 73.6 g, same as best pin design): R 0.379 K/W, dP 29 Pa vs pin design 0.274 K/W, 667 Pa (pin wins on R by 28 %, plate wins on dP by 23x)
 - [x] T8 Surrogate model on GPU  DONE 2026-10-13: MLP on RTX 5070, 56 CFD cases, 5-fold CV R2 0.996 (R) / 0.992 (dP). Attempt 1 (raw d,pd,h,layout,V) FAILED the check: CFD at predicted optimum d3.3/pd1.85 gave R +12 %, dP -26 % (integer pin-count jumps). Attempt 2 (+n_rows, wetted area features) optimum d3.7/pd1.8/h35 inline: R 0.3414 pred vs 0.3403 CFD (-0.3 %), dP 143.4 vs 153.0 (+6.7 %). See docs/surrogate.md
 - [ ] T9 Visuals
-- [ ] T10 Report and repo polish
+- [~] T10 Report and repo polish  README, docs/report.md (filled), Makefile, LICENSE done; fresh-copy `make venv && make quick` PASSED 2026-10-13 (11 tests, CAD, hand calc, coarse CFD R 0.389 K/W / 144 Pa; results/T10quick/quick.log); pending: renders in README, final number check by audit
 - [ ] T11 Independent audit
