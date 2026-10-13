@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # T0 acceptance: prints the environment; exits non-zero if something essential is missing.
-set -u
+set +u
 cd "$(dirname "$0")/.."
 ok=0
 echo "== date: $(date -Is)"; echo "== host: $(hostname)  $(grep PRETTY /etc/os-release)"

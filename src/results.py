@@ -154,10 +154,11 @@ def parse_case(case: str) -> dict:
         n_iter, exec_t, converged = 0, None, False
         with open(log, errors="replace") as f:
             for line in f:
-                if line.startswith("Time = "):
-                    n_iter = int(float(line.split("=")[1]))
-                elif line.startswith("ExecutionTime"):
-                    exec_t = float(line.split()[2])
+                ls = line.strip()
+                if ls.startswith("Time = "):
+                    n_iter = int(float(ls.split("=")[1].strip().rstrip("s")))
+                elif ls.startswith("ExecutionTime"):
+                    exec_t = float(ls.split()[2])
                 elif "converged" in line.lower() and "residual" in line.lower():
                     converged = True
         res["iterations"] = n_iter
