@@ -44,3 +44,15 @@
   meshes with createNonConformalCouples exactly as the OpenFOAM-14 hotWire tutorial does.
   The single-mesh cellZone/splitMeshRegions route cannot add layers (OpenFOAM-14 layer
   addition is patch-based only).
+
+## D9 (2026-10-12) Interface turbulence BC
+omegaWallFunction on the non-conformally stitched pin/base interface (197k fragment faces) makes omega diverge
+(1e44 within 20 iterations; confirmed by variants: omega zeroGradient + kqRWallFunction + nutUSpaldingWallFunction
+on the interface is stable, omegaWallFunction is not, regardless of blended). Decision: interface omega zeroGradient,
+k kqRWallFunction, nut nutUSpaldingWallFunction (continuous), alphat wallFunction. Other walls keep omegaWallFunction (blended).
+Consequence: near-pin turbulence is approximate; validated against correlations (docs/validation.md).
+
+## D10 (2026-10-12) Coarse mesh size
+The coarse level (surface refinement 2 plus 4 prism layers) gives 424k fluid + 64k solid cells (0.49M), above the
+<400k target in PLAN.md. Accepted: the extra cells are the prism layers, which are needed for y+ of 1-5 at the pins;
+the mesh study (T4) reports the true counts. Solve time 200 s per 400 iterations on 6 cores is well within budget.

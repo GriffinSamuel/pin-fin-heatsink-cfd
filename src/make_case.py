@@ -321,25 +321,31 @@ def fluid_fields(V: float, k_in: float, omega_in: float, mixing_length: float) -
 {sct}""", "fluid"),
         "p": field("volScalarField", "p", "[1 -1 -2 0 0 0 0]", f"uniform {P_REF:g}", f"""
     ".*"            {{ type fixedFluxPressure; value $internalField; }}
+    heatsink        {{ type zeroGradient; }}
     outlet          {{ type totalPressure; p0 $internalField; value $internalField; }}
 {sct}""", "fluid"),
         "k": field("volScalarField", "k", "[0 2 -2 0 0 0 0]", f"uniform {k_in:.4g}", f"""
     ".*"            {{ type kqRWallFunction; value $internalField; }}
+    heatsink        {{ type zeroGradient; }}
     inlet           {{ type turbulentKineticEnergy; intensity 0.05; value $internalField; }}
     outlet          {{ type inletOutlet; inletValue $internalField; value $internalField; }}
 {sct}""", "fluid"),
         "omega": field("volScalarField", "omega", "[0 0 -1 0 0 0 0]", f"uniform {omega_in:.4g}", f"""
-    ".*"            {{ type omegaWallFunction; value $internalField; }}
+    ".*"            {{ type omegaWallFunction; blended true; value $internalField; }}
+    heatsink        {{ type zeroGradient; }}
+    interface_on_heatsink {{ type zeroGradient; }}   // omegaWallFunction diverges on stitched fragment faces (DECISIONS.md D9)
     inlet           {{ type turbulentOmega; mixingLength {mixing_length:.4g}; value $internalField; }}
     outlet          {{ type inletOutlet; inletValue $internalField; value $internalField; }}
 {sct}""", "fluid"),
         "nut": field("volScalarField", "nut", "[0 2 -1 0 0 0 0]", "uniform 0", f"""
-    ".*"            {{ type nutkWallFunction; value uniform 0; }}
+    ".*"            {{ type nutUSpaldingWallFunction; value uniform 0; }}
+    heatsink        {{ type zeroGradient; }}
     inlet           {{ type calculated; value uniform 0; }}
     outlet          {{ type calculated; value uniform 0; }}
 {sct}""", "fluid"),
         "alphat": field("volScalarField", "alphat", "[1 -1 -1 0 0 0 0]", "uniform 0", f"""
     ".*"            {{ type compressible::alphatWallFunction; value uniform 0; }}
+    heatsink        {{ type zeroGradient; }}
     inlet           {{ type calculated; value uniform 0; }}
     outlet          {{ type calculated; value uniform 0; }}
 {sct}""", "fluid"),
