@@ -490,6 +490,7 @@ relaxationFactors
     {
         rho             1.0;
         p               0.7;
+        p_rgh           0.7;
     }
     equations
     {
