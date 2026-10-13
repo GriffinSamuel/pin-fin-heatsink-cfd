@@ -50,6 +50,16 @@ def region(regions: dict, kind: str):
     return None
 
 
+def ensure_point_data(ds):
+    """Fields that only exist as cell data are interpolated to the points."""
+    if ds is not None and ds.n_cells and any(k not in ds.point_data for k in ds.cell_data.keys()):
+        keep = {k: ds.point_data[k] for k in ds.point_data.keys()}
+        ds = ds.cell_data_to_point_data(pass_cell_data=True)
+        for k, v in keep.items():
+            ds.point_data[k] = v
+    return ds
+
+
 def celsius(ds):
     if ds is not None and "T" in ds.point_data:
         ds.point_data["T_C"] = ds.point_data["T"] - 273.15
@@ -77,9 +87,9 @@ def render_all(case: str, out: str, name: str) -> list[str]:
     made = []
     if solid is None or fluid is None:
         raise RuntimeError(f"regions not found: {list(regions)}")
-    s_mesh = celsius(solid["internalMesh"])
-    f_mesh = celsius(fluid["internalMesh"])
-    s_surf = s_mesh.extract_surface()
+    s_mesh = celsius(ensure_point_data(solid["internalMesh"]))
+    f_mesh = celsius(ensure_point_data(fluid["internalMesh"]))
+    s_surf = s_mesh.extract_surface(algorithm="dataset_surface")
     have_T = "T_C" in s_surf.point_data
     have_U = "U" in f_mesh.point_data
     have_p = "p" in f_mesh.point_data
@@ -130,7 +140,7 @@ def render_all(case: str, out: str, name: str) -> list[str]:
         seeds = pv.Plane(center=(-0.020, 0.030, z_mid), direction=(1, 0, 0), i_size=0.058, j_size=zb[5] - 0.006,
                          i_resolution=12, j_resolution=6)
         try:
-            stream = f_mesh.streamlines_from_source(seeds, vectors="U", max_time=0.5, integration_direction="forward")
+            stream = f_mesh.streamlines_from_source(seeds, vectors="U", max_length=0.5, integration_direction="forward")
             stream["speed"] = np.linalg.norm(stream.point_data["U"], axis=1)
             p.add_mesh(stream.tube(radius=0.0003), scalars="speed", cmap="Blues",
                        scalar_bar_args={**sargs, "title": "Speed, m/s", "fmt": "%.1f"})
