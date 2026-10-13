@@ -183,7 +183,10 @@ def main(argv=None):
     df = pd.read_csv(a.csv)
     if "status" in df:
         df = df[df["status"] == "ok"]
-    df = df.dropna(subset=["R_max_K_W", "dP_Pa"]).reset_index(drop=True)
+    df = df.dropna(subset=["R_max_K_W", "dP_Pa"])
+    if "mesh" in df:
+        df = df[df["mesh"] == "coarse"]
+    df = df.reset_index(drop=True)
     t0 = time.time()
     cv = cross_validate(df, k=a.k, epochs=a.epochs)
     d = frame(df)

@@ -48,6 +48,10 @@ def load(csv: str) -> pd.DataFrame:
     if "status" in df:
         df = df[df["status"] == "ok"]
     df = df.dropna(subset=["R_max_K_W", "dP_Pa"]).copy()
+    if "V" in df:                      # the design sweep is the 4 m/s set; other velocities feed the surrogate only
+        df = df[df["V"] == 4.0]
+    if "mesh" in df:
+        df = df[df["mesh"] == "coarse"]
     df["T_chip_max_C"] = 25 + 100 * df["R_max_K_W"]
     return df
 
