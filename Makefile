@@ -27,7 +27,7 @@ coarse:
 quick: test geometry analytic coarse
 
 sweep:
-	$(PY) -m src.sweep --mesh medium --V 4 --np $(NP) --jobs 2
+	$(PY) -m src.sweep --mesh coarse --V 4 --np 8 --jobs 1 --iters 600
 
 analysis:
 	$(PY) -m src.analysis --csv results/sweep.csv --out results --fig figures --docs docs

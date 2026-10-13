@@ -64,10 +64,17 @@ def fig_pareto(df: pd.DataFrame, front: pd.DataFrame, path: str, title: str) -> 
                        facecolors=LAYOUT_COLOR[lay], edgecolors="#fcfcfb", linewidths=1.2,
                        label=f"{lay}, h = {h:g} mm", zorder=3)
     ax.plot(front["dP_Pa"], front["R_max_K_W"], color=INK2, lw=1.6, zorder=2, label="Pareto front")
+    keep = {0, 2, 4, 6, len(front) - 1}
     for i, (_, r) in enumerate(front.iterrows()):
-        ax.annotate(f"d{r['d']:g} p/d{r['pd']:g} h{r['h']:g} {r['layout'][:3]}",
-                    (r["dP_Pa"], r["R_max_K_W"]), xytext=(7, 5 if i % 2 == 0 else -11),
-                    textcoords="offset points", fontsize=7.5, color=INK2)
+        if i not in keep:
+            continue
+        ax.annotate(f"d {r['d']:g}, p/d {r['pd']:g}, {r['layout'][:3]}",
+                    (r["dP_Pa"], r["R_max_K_W"]), xytext=(10, 8), textcoords="offset points", fontsize=8, color=INK2)
+    # CFD-verified surrogate optimum, if the verification result is present next to the sweep
+    import glob, json, os
+    for f in glob.glob(os.path.join(os.path.dirname(path) or ".", "..", "results", "custom_d3.7_pd1.8_h35_inline_V4_coarse.json")):
+        c = json.load(open(f))
+        ax.scatter([c["dP_cfd"]], [c["R_cfd"]], s=150, marker="*", color="#1a1a1a", zorder=4, label="surrogate optimum (CFD)")
     ax.set_xlabel("Pressure drop across the heat sink, Pa")
     ax.set_ylabel("Thermal resistance chip-to-inlet, K/W")
     ax.set_title(title, loc="left", color=INK, fontsize=11)
