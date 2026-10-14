@@ -1,0 +1,15 @@
+#!/bin/sh
+cd ${0%/*} || exit 1    # Run from this directory
+
+# Source tutorial run functions
+. $WM_PROJECT_DIR/bin/tools/RunFunctions
+
+rm -rf constant/polyMesh/sets
+
+runApplication -s fluid blockMesh -region fluid || exit 1
+runApplication -s solid blockMesh -region solid || exit 1
+runApplication -s fluid snappyHexMesh -region fluid || exit 1
+runApplication -s solid snappyHexMesh -region solid || exit 1
+runApplication createNonConformalCouples || exit 1
+runApplication -s fluid checkMesh -region fluid -constant
+runApplication -s solid checkMesh -region solid -constant

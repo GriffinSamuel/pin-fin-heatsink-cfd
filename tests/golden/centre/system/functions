@@ -1,0 +1,24 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      functions;
+}
+
+#includeFunc cellMax(region=solid, T)
+#includeFunc cellMin(region=solid, T)
+#includeFunc patchAverage(region=solid, patch=chip, T)
+#includeFunc patchAverage(region=fluid, patch=inlet, p)
+#includeFunc patchAverage(region=fluid, patch=outlet, p)
+#includeFunc patchAverage(region=fluid, patch=outlet, T)
+#includeFunc patchAverage(region=fluid, patch=inlet, T)
+#includeFunc patchFlowRate(region=fluid, patch=inlet, phi)
+#includeFunc patchFlowRate(region=fluid, patch=outlet, phi)
+#includeFunc cellMax(region=fluid, T)
+#includeFunc residuals(region=fluid, p, U, h, k, omega)
+#includeFunc residuals(region=solid, e)
+#includeFunc wallHeatFlux(region=solid)
+#includeFunc wallHeatFlux(region=fluid)
+#includeFunc yPlus(region=fluid)

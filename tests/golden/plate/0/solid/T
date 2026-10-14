@@ -1,0 +1,22 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    location    "0/solid";
+    object      T;
+}
+
+dimensions      [0 0 0 1 0 0 0];
+
+internalField   uniform 318.15;
+
+boundaryField
+{
+
+    ".*"            { type zeroGradient; }
+    chip            { type fixedGradient; gradient uniform 555.556; }
+    interface_on_heatsink { type coupledTemperature; value uniform 318.15; }
+    #includeEtc "caseDicts/setConstraintTypes"
+
+}

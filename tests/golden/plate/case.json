@@ -1,0 +1,27 @@
+{
+  "spec": {
+    "t": 1.5,
+    "n": 9,
+    "h": 35.0,
+    "base_l": 60.0,
+    "base_w": 60.0,
+    "base_t": 4.0,
+    "layout": "plate"
+  },
+  "name": "plate_t1.5_n9_h35",
+  "V": 4.0,
+  "mesh": "coarse",
+  "n_proc": 6,
+  "n_iter": 1500,
+  "flavour": "org",
+  "n_layers": 4,
+  "duct_height_m": 0.039,
+  "q_flux_W_m2": 111111.11111111111,
+  "k_in": 0.06000000000000001,
+  "omega_in": 135.14696567306422,
+  "n_pins": 9,
+  "n_rows": null,
+  "fin_mass_g": 76.545,
+  "kind": "plate",
+  "analytic": {}
+}

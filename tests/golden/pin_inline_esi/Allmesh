@@ -1,0 +1,11 @@
+#!/bin/sh
+cd ${0%/*} || exit 1
+. ${WM_PROJECT_DIR:-/usr/share/openfoam}/bin/tools/RunFunctions 2>/dev/null || true
+run() { name=$1; log=$2; shift 2; echo "Running $name ($log)"; "$name" "$@" > log.$log 2>&1 || { echo "FAILED: $name (see log.$log)"; exit 1; }; }
+run blockMesh blockMesh.fluid -region fluid
+run blockMesh blockMesh.solid -region solid
+run snappyHexMesh snappyHexMesh.fluid -region fluid -overwrite
+run snappyHexMesh snappyHexMesh.solid -region solid -overwrite
+checkMesh -region fluid -constant > log.checkMesh.fluid 2>&1
+checkMesh -region solid -constant > log.checkMesh.solid 2>&1
+echo "esi flavour: no non-conformal coupling available; meshes only"

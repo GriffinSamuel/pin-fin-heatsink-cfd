@@ -1,0 +1,23 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    location    "0/fluid";
+    object      omega;
+}
+
+dimensions      [0 0 -1 0 0 0 0];
+
+internalField   uniform 135.1;
+
+boundaryField
+{
+
+    ".*"            { type omegaWallFunction; blended true; value $internalField; }
+    heatsink        { type zeroGradient; }
+    interface_on_heatsink { type zeroGradient; }   // omegaWallFunction diverges on stitched fragment faces (DECISIONS.md D9)
+    inlet           { type turbulentOmega; mixingLength 0.003309; value $internalField; }
+    outlet          { type inletOutlet; inletValue $internalField; value $internalField; }
+    #includeEtc "caseDicts/setConstraintTypes"
+}

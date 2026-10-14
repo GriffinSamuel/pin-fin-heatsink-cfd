@@ -1,0 +1,122 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system/fluid";
+    object      snappyHexMeshDict;
+}
+
+#includeEtc "caseDicts/mesh/generation/snappyHexMeshDict.cfg"
+
+castellatedMesh true;
+snap            true;
+addLayers       true;
+
+geometry
+{
+    heatsink
+    {
+        type triSurface;
+        file "heatsink.stl";
+    }
+    refinementBox
+    {
+        type box;
+        min (-0.012 -0.001 -0.001);
+        max ( 0.085  0.061  0.0400);
+    }
+    pinBox
+    {
+        type box;
+        min (-0.003 -0.001 0.003);
+        max ( 0.066  0.061  0.0400);
+    }
+};
+
+castellatedMeshControls
+{
+    maxLocalCells 2000000;
+    maxGlobalCells 20000000;
+    minRefinementCells 10;
+    maxLoadUnbalance 0.10;
+    nCellsBetweenLevels 2;
+    resolveFeatureAngle 30;
+    allowFreeStandingZoneFaces true;
+
+    features
+    (
+    );
+
+    refinementSurfaces
+    {
+        heatsink
+        {
+            level (2 2);
+            patchInfo
+            {
+                type wall;
+            }
+        }
+    }
+
+    refinementRegions
+    {
+        refinementBox
+        {
+            mode    inside;
+            level 1;
+        }
+        pinBox
+        {
+            mode    inside;
+            level 1;
+        }
+    }
+
+    insidePoint (-0.0305 0.0305 0.0199);
+}
+
+snapControls
+{
+    nSmoothPatch 3;
+    tolerance 2.0;
+    nSolveIter 50;
+    nRelaxIter 5;
+    nFeatureSnapIter 10;
+    implicitFeatureSnap true;
+    explicitFeatureSnap false;
+    multiRegionFeatureSnap false;
+}
+
+addLayersControls
+{
+    relativeSizes true;
+    layers
+    {
+        heatsink
+        {
+            nSurfaceLayers 4;
+        }
+    }
+    expansionRatio 1.2;
+    finalLayerThickness 0.4;
+    minThickness 0.05;
+    nGrow 0;
+    featureAngle 100;
+    slipFeatureAngle 30;
+    nRelaxIter 5;
+    nSmoothSurfaceNormals 1;
+    nSmoothNormals 3;
+    nSmoothThickness 10;
+    maxFaceThicknessRatio 0.5;
+    maxThicknessToMedialRatio 0.3;
+    minMedialAxisAngle 90;
+    nBufferCellsNoExtrude 0;
+    nLayerIter 50;
+}
+
+
+
+debug 0;
+mergeTolerance 1e-6;
