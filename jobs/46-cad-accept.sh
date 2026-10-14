@@ -8,7 +8,7 @@ ok=0; for t in $(seq 1 40); do ok=1;
   [ "$(tr -d '\r' < $SRC/src/geometry.py | md5sum | cut -d' ' -f1)" = "6044766d38c4e5c6a376e994d01fd059" ] || ok=0
   [ "$(tr -d '\r' < $SRC/src/make_case.py | md5sum | cut -d' ' -f1)" = "eefead6e646faa3c18ad81febdbd075d" ] || ok=0
   [ "$(tr -d '\r' < $SRC/src/results.py | md5sum | cut -d' ' -f1)" = "b747e3ac2d8b755bb5a67a12880fb3a1" ] || ok=0
-  [ "$(tr -d '\r' < $SRC/src/run.py | md5sum | cut -d' ' -f1)" = "da1d38a10b51e9fd8643594b15295b15" ] || ok=0
+  [ "$(tr -d '\r' < $SRC/src/run.py | md5sum | cut -d' ' -f1)" = "4e1e27f2e014c442676fdba789386cf0" ] || ok=0
   [ "$(tr -d '\r' < $SRC/src/runner.py | md5sum | cut -d' ' -f1)" = "e35ba32f7f27ff5059c9257f94d828ca" ] || ok=0
   [ "$(tr -d '\r' < $SRC/src/studies.py | md5sum | cut -d' ' -f1)" = "8769a9bed8e63ed16c986fd6ae1b851a" ] || ok=0
   [ "$(tr -d '\r' < $SRC/src/surrogate.py | md5sum | cut -d' ' -f1)" = "748213b46294c8b68d7f537be2488d09" ] || ok=0
