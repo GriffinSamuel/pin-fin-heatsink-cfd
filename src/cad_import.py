@@ -36,6 +36,7 @@ EMBED = 1.0          # mm, same as src.geometry.EMBED
 Z_STEP = 0.25        # mm, spacing of the sections used to find the base thickness
 Z_EPS = 0.0013       # mm, keeps section planes off coincident faces
 BASE_DROP = 0.6      # section area must fall below this fraction of the base area to count as "fins"
+TOUCH_DEPTH = 0.4          # mm, how far below a rounded tip the fin section is taken for squaring off
 TIP_GAP_FALLBACK = 0.3   # mm, shroud clearance used when the fin tips are not flat
 
 
@@ -268,7 +269,7 @@ def _fin_volume(mesh: trimesh.Trimesh, base_t: float) -> float:
 # ------------------------------------------------------------------ embedding
 
 def _embed_for_snappy(mesh: trimesh.Trimesh, base_t: float, L: float, W: float, fin_area: float,
-                      warnings: list[str]) -> tuple[trimesh.Trimesh, float]:
+                      warnings: list[str], tip_mode: str = "touch") -> tuple[trimesh.Trimesh, float]:
     """Return the sink extended so no face lies on a mesh boundary, plus the tip gap actually used (mm)."""
     zmax = float(mesh.bounds[1][2])
     parts = [mesh]
@@ -290,10 +291,22 @@ def _embed_for_snappy(mesh: trimesh.Trimesh, base_t: float, L: float, W: float, 
             c = trimesh.creation.extrude_polygon(poly, height=0.5 + EMBED)
             c.apply_translation([0.0, 0.0, zmax - 0.5])
             parts.append(c)
-    else:
+    elif tip_mode == "gap":
         tip_gap = TIP_GAP_FALLBACK
         warnings.append(f"fin tips are not flat; a {TIP_GAP_FALLBACK} mm tip gap was left below the shroud "
                         "(the study's designs have none, so results differ slightly in physics)")
+    else:
+        # rounded or pointed tips: square them off by extending the fin section found TOUCH_DEPTH below the tip
+        # up through the shroud, so the fins touch the top wall as in the study (a thin gap meshes badly)
+        sec = _polys_from_section(mesh, zmax - TOUCH_DEPTH)
+        # the prism is shrunk 0.02 mm so its sides stay inside the fin and cross the tip surface cleanly (a prism whose
+        # sides coincide with the fin sides gives sliver triangles that do not survive the float32 STL export)
+        for poly in _parts(sec.buffer(-0.02, join_style=2)):
+            c = trimesh.creation.extrude_polygon(poly, height=TOUCH_DEPTH + EMBED)
+            c.apply_translation([0.0, 0.0, zmax - TOUCH_DEPTH])
+            parts.append(c)
+        warnings.append(f"fin tips are rounded or pointed; the fin section {TOUCH_DEPTH} mm below each tip was extended "
+                        "up to the shroud, which adds a small sliver of metal at the tips")
     out = trimesh.boolean.union(parts, engine="manifold")
     if not out.is_watertight:
         raise InputRefused("could not extend the model through the duct walls (the union is not watertight); "
@@ -303,7 +316,8 @@ def _embed_for_snappy(mesh: trimesh.Trimesh, base_t: float, L: float, W: float, 
 
 # ------------------------------------------------------------------ public API
 
-def load(path: str, units: str = "auto", orient: str = "auto", out_dir: str | None = None) -> SinkModel:
+def load(path: str, units: str = "auto", orient: str = "auto", out_dir: str | None = None,
+         tip_mode: str = "touch") -> SinkModel:
     """Load, orient, measure and embed a heat sink. orient: 'auto', 'none', or a rotation list such as
     'x90 z-90' (degrees about x then z, applied in order) in which case auto-detection is skipped."""
     warnings: list[str] = []
@@ -350,9 +364,16 @@ def load(path: str, units: str = "auto", orient: str = "auto", out_dir: str | No
     clean_stl = os.path.join(out_dir, f"{stem}_clean.stl")
     snappy_stl = os.path.join(out_dir, f"{stem}_snappy.stl")
     mesh.export(clean_stl)
-    emb, tip_gap = _embed_for_snappy(mesh, base_t, L, W, float(fins.area), warnings)
+    emb, tip_gap = _embed_for_snappy(mesh, base_t, L, W, float(fins.area), warnings, tip_mode)
     emb.apply_scale(0.001)
     emb.export(snappy_stl)
+    if not trimesh.load(snappy_stl, force="mesh").is_watertight and tip_mode != "gap":
+        # float32 rounding in the STL left a hole near a fine tip: use the gap fallback instead
+        warnings[:] = [w for w in warnings if "squared" not in w and "extended up to the shroud" not in w]
+        emb, tip_gap = _embed_for_snappy(mesh, base_t, L, W, float(fins.area), warnings, "gap")
+        emb.apply_scale(0.001)
+        emb.export(snappy_stl)
+        warnings.append("squaring off the fin tips left a hole in the exported STL, so the gap fallback was used")
 
     model = SinkModel(
         source=os.path.abspath(path), units_in=u, transform=total.tolist(), L=L, W=W, base_t=base_t, h=h,

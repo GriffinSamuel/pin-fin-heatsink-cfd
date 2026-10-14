@@ -175,6 +175,13 @@ def test_flat_tip_vs_pointed_tip_warning(tmp_path):
     m = base.union(cone)
     f = tmp_path / "cone.step"
     cq.exporters.export(m, str(f))
+    # default: the tips are squared off to touch the shroud, no gap, and the importer says so
     model = ci.load(str(f), out_dir=str(tmp_path / "o"))
-    assert model.tip_gap_mm == pytest.approx(ci.TIP_GAP_FALLBACK)
-    assert any("tip gap" in w for w in model.warnings)
+    # a needle-like cone may fall back to the gap if the float32 STL cannot hold the squared tip; either is reported
+    assert model.tip_gap_mm in (0.0, ci.TIP_GAP_FALLBACK)
+    assert any("tip" in w for w in model.warnings)
+    assert trimesh.load(model.snappy_stl, force="mesh").is_watertight
+    # the gap fallback is still available
+    gap = ci.load(str(f), out_dir=str(tmp_path / "g"), tip_mode="gap")
+    assert gap.tip_gap_mm == pytest.approx(ci.TIP_GAP_FALLBACK)
+    assert any("tip gap" in w for w in gap.warnings)

@@ -160,6 +160,8 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--dry-run", action="store_true", help="import, measure and write the case; no mesher, no solver")
     ap.add_argument("--mesh-timeout", type=int, default=3600)
     ap.add_argument("--solve-timeout", type=int, default=2700)
+    ap.add_argument("--tip-mode", choices=["touch", "gap"], default="touch",
+                    help="fins with rounded or pointed tips: squared off to touch the shroud (touch) or left 0.3 mm short (gap)")
     ap.add_argument("--flavour", choices=["org", "esi"], default="org", help="esi = mesh-only cloud testing")
     ap.add_argument("--title", default="Heat sink CFD results")
     return ap
@@ -183,7 +185,7 @@ def inspect(a) -> int:
 
 def run_file(path: str, a, out: str, velocities: list[float]) -> tuple[list[dict], int]:
     stem = os.path.splitext(os.path.basename(path))[0]
-    model = ci.load(path, a.units, a.orient, out_dir=os.path.join(out, f"{stem}_import"))
+    model = ci.load(path, a.units, a.orient, out_dir=os.path.join(out, f"{stem}_import"), tip_mode=a.tip_mode)
     for w in model.warnings:
         print(f"warning ({stem}): {w}")
     dom = mc.domain_from_model(model, parse_chip(a.chip), parse_offset(a.chip_offset), a.power, a.material,
