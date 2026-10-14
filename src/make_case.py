@@ -61,6 +61,7 @@ class DomainSpec:
     x_out: float | None = None
     base_cell: float = BASE_CELL
     tip_gap: float = 0.0
+    solid_point: tuple | None = None    # snappy inside point of the solid region; default is the base centre
 
     def __post_init__(self):
         if self.x_in is None:
@@ -227,7 +228,8 @@ def snappy_dict(dom: DomainSpec, level: dict, flavour: str, region: str, n_layer
         add_layers = "true" if n_layers > 0 else "false"
         layers = f"        heatsink\n        {{\n            nSurfaceLayers {n_layers};\n        }}"
     else:
-        inside = f"({L / 2 + 0.0005:.4f} {W / 2 + 0.0005:.4f} {dom.base_t / 2 + 0.0001:.4f})"
+        sp = dom.solid_point or (L / 2 + 0.0005, W / 2 + 0.0005, dom.base_t / 2 + 0.0001)
+        inside = f"({sp[0]:.4f} {sp[1]:.4f} {sp[2]:.4f})"
         add_layers = "false"
         layers = ""
     return hdr("dictionary", "snappyHexMeshDict", f"system/{region}") + f"""
@@ -865,6 +867,37 @@ def cad_mesh_level(min_feature_mm: float, mesh: str, base_cell: float = BASE_CEL
         base = surf_override
     offs = {"coarse": 0, "medium": 1, "fine": 2}[mesh]
     return {**MESH_LEVELS[mesh], "surf": base + offs}
+
+
+def find_solid_point(snappy_stl: str, L: float, W: float, base_t: float) -> tuple:
+    """A point inside the base slab of the embedded STL (metres). The base centre is tried first; a sink with a
+    hole or a pocket there gets the first point of a 7 x 7 grid over the footprint that is inside."""
+    import numpy as np
+    import trimesh
+    mesh = trimesh.load(snappy_stl, force="mesh")
+    z = base_t / 2 + 0.0001
+    cands = [(L / 2 + 0.0005, W / 2 + 0.0005)]
+    cands += [(L * (i + 0.5) / 7 + 0.0005, W * (j + 0.5) / 7 + 0.0005) for i in range(7) for j in range(7)]
+    pts = np.array([(x, y, z) for x, y in cands])
+    inside = mesh.contains(pts)
+    if not inside.any():
+        raise RuntimeError("no point inside the base slab was found for the solid region")
+    return tuple(float(v) for v in pts[int(np.argmax(inside))])
+
+
+def domain_from_model(model, chip_mm: tuple, chip_offset_mm: tuple = (0.0, 0.0), power_W: float = Q_CHIP,
+                      material: str = "aluminium", base_cell: float = BASE_CELL) -> DomainSpec:
+    """DomainSpec for an imported sink (src.cad_import.SinkModel). chip_mm = (size_x, size_y)."""
+    from src import cad_import
+    x0, y0, x1, y1 = cad_import.chip_rect(model, chip_mm, chip_offset_mm)       # mm, refuses a chip that does not fit
+    kappa, rho = MATERIALS[material]
+    mm = 1e-3
+    dom = DomainSpec(L=model.L * mm, W=model.W * mm, base_t=model.base_t * mm, h=model.h * mm,
+                     chip_x0=x0 * mm, chip_x1=x1 * mm, chip_y0=y0 * mm, chip_y1=y1 * mm,
+                     power_W=power_W, kappa_solid=kappa, rho_solid=rho, base_cell=base_cell,
+                     tip_gap=model.tip_gap_mm * mm)
+    dom.solid_point = find_solid_point(model.snappy_stl, dom.L, dom.W, dom.base_t)
+    return dom
 
 
 def write_case_from_model(model, dom: DomainSpec, V: float, mesh: str, out: str, n_proc: int = 6,
