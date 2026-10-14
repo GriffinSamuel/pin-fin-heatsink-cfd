@@ -67,3 +67,17 @@ as a limitation, not hidden. Sweep runs on the coarse mesh with 600 iterations (
 Two concurrent 6-process cases each ran roughly 7x slower than a solo case (519 iterations in 30 min vs ~0.5 s/iteration solo),
 so throughput was worse than sequential. The sweep runs 1 case at a time with 8 processes and 600 iterations (the centre
 case is converged to 0.03 K by 400 iterations). PLAN.md's "2 cases at a time" was based on a benchmark of a different case size.
+
+## D13 (2026-10-14) The parametric path is not routed through the importer
+`write_case(spec, ...)` still writes its own CadQuery snappy STL and a `DomainSpec` built from the old constants, so the 36-design study
+stays reproducible byte for byte (tests/test_make_case_golden.py compares system/, 0/ and constant/ with dictionaries written by the
+pre-refactor code). The importer is a second way into the same templates.
+
+## D14 (2026-10-14) Tip gap fallback
+snappyHexMesh needs the sink STL to cross every boundary of the background mesh. Flat fin tips can be extended 1 mm through the shroud; pointed or
+domed tips cannot (a tip triangle area under half the fin cross-section). Then a 0.3 mm gap is left under the shroud and the importer warns. The alternative
+(refusing) would turn away common shapes; the gap lets some air bypass and lowers dP, which the warning says.
+
+## D15 (2026-10-14) Surface refinement from the thinnest feature
+The study set level 2 by hand for 2 mm pins and 3 for 1.5 mm plates. The rule `ceil(log2(cell / (min_feature / 2.5)))`, clamped to 2..4, gives those two values
+and scales to other shapes; it is a heuristic with the same unproven mesh independence as the study.

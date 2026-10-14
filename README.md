@@ -101,10 +101,17 @@ make analysis                         # Pareto front, figures, docs/results.md
 make surrogate                        # train the surrogate and search the design space (needs torch for the GPU; falls back to NumPy)
 ```
 
+## Run your own CAD
+
+`python -m src.run --cad my_sink.step --chip 30x30 --power 100 --V 4` imports a STEP or STL heat sink, orients and measures it,
+builds the same two-region OpenFOAM case, runs it and reports R, pressure drop and fin mass; `--cad-dir` does a folder and writes
+a table and a Pareto set, `--inspect` only measures, `--dry-run` writes the case. The tool has no hand calculation and no surrogate for
+arbitrary shapes and has been compared with the study only on two of its own designs. See [docs/cad_input.md](docs/cad_input.md).
+
 ## Repository
 
 ```
-src/        geometry, analytic model, case generator, sweep, results, analysis, surrogate, visuals
+src/        geometry, analytic model, case generator, CAD import and run CLI, sweep, results, analysis, surrogate, visuals
 tests/      pytest acceptance tests for geometry and correlations
 docs/       report, mesh study, validation, results, surrogate, audit
 results/    sweep.csv (56 cases), pareto.csv, surrogate.json, per-study folders (T0, T3-T9, T8b, T10med, T10quick)

@@ -188,6 +188,10 @@ def run_file(path: str, a, out: str, velocities: list[float]) -> tuple[list[dict
         print(f"warning ({stem}): {w}")
     dom = mc.domain_from_model(model, parse_chip(a.chip), parse_offset(a.chip_offset), a.power, a.material,
                                a.base_cell * 1e-3)
+    lvl = mc.cad_mesh_level(model.min_feature_mm, a.mesh, dom.base_cell, a.surf_level)["surf"]
+    if lvl >= 4:
+        print(f"warning ({stem}): surface refinement level {lvl} for a {model.min_feature_mm:.2f} mm feature; "
+              "expect a large mesh and a long run")
     rows, code = [], EXIT_OK
     for V in velocities:
         name = f"{stem}_V{V:g}_{a.mesh}"
