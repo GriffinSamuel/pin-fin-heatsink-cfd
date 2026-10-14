@@ -23,6 +23,7 @@ import os
 import shutil
 import stat
 import textwrap
+from dataclasses import dataclass
 
 from src.geometry import HeatSinkSpec, PlateFinSpec, export_all, export_platefin, metadata, platefin_metadata
 from src.analytic import solve as analytic_solve
@@ -31,11 +32,76 @@ T_IN = 298.15           # K (25 C)
 Q_CHIP = 100.0          # W
 KAPPA_AL = 200.0        # W/m-K
 P_REF = 1e5             # Pa
-X_SPLITS = [-0.060, 0.015, 0.045, 0.180]      # m, chip footprint 0.015..0.045
-Y_SPLITS = [0.000, 0.015, 0.045, 0.060]
+RHO_AL = 2700.0         # kg/m^3
 BASE_CELL = 0.003       # m, background cell size
-NX = [25, 10, 45]
-NY = [5, 10, 5]
+CHIP_SIZE = 0.030       # m, chip side of the study (parametric designs)
+
+MATERIALS = {"aluminium": (200.0, 2700.0), "copper": (385.0, 8960.0)}   # (kappa W/m-K, rho kg/m3)
+
+
+@dataclass
+class DomainSpec:
+    """Everything the case templates need to know about the duct, the sink envelope and the chip (metres).
+
+    Duct: x in [x_in, x_out], y in [0, W], z in [0, H] with H = base_t + h + tip_gap. The sink base occupies
+    x in [0, L]. The chip is the rectangle [chip_x0, chip_x1] x [chip_y0, chip_y1] on the floor under the base."""
+    L: float
+    W: float
+    base_t: float
+    h: float
+    chip_x0: float
+    chip_x1: float
+    chip_y0: float
+    chip_y1: float
+    power_W: float = Q_CHIP
+    T_in_K: float = T_IN
+    kappa_solid: float = KAPPA_AL
+    rho_solid: float = RHO_AL
+    x_in: float | None = None
+    x_out: float | None = None
+    base_cell: float = BASE_CELL
+    tip_gap: float = 0.0
+
+    def __post_init__(self):
+        if self.x_in is None:
+            self.x_in = -1.0 * self.L          # study: -0.060 for L = 0.060
+        if self.x_out is None:
+            self.x_out = 3.0 * self.L          # study: 0.180
+
+    @property
+    def H(self) -> float:
+        return self.base_t + self.h + self.tip_gap
+
+    @property
+    def x_splits(self) -> list[float]:
+        return [self.x_in, self.chip_x0, self.chip_x1, self.x_out]
+
+    @property
+    def y_splits(self) -> list[float]:
+        return [0.0, self.chip_y0, self.chip_y1, self.W]
+
+    @property
+    def nx(self) -> list[int]:
+        X = self.x_splits
+        return [max(1, round((X[i + 1] - X[i]) / self.base_cell)) for i in range(3)]
+
+    @property
+    def ny(self) -> list[int]:
+        Y = self.y_splits
+        return [max(1, round((Y[i + 1] - Y[i]) / self.base_cell)) for i in range(3)]
+
+    @property
+    def chip_area(self) -> float:
+        return (self.chip_x1 - self.chip_x0) * (self.chip_y1 - self.chip_y0)
+
+
+def domain_for_spec(spec) -> DomainSpec:
+    """The study's domain: 30 x 30 mm chip centred under the base, 100 W, aluminium."""
+    L, W = spec.base_l * 1e-3, spec.base_w * 1e-3
+    cx, cy = L / 2, W / 2
+    return DomainSpec(L=L, W=W, base_t=spec.base_t * 1e-3, h=spec.h * 1e-3,
+                      chip_x0=cx - CHIP_SIZE / 2, chip_x1=cx + CHIP_SIZE / 2,
+                      chip_y0=cy - CHIP_SIZE / 2, chip_y1=cy + CHIP_SIZE / 2)
 
 # surface refinement level, box refinement level, layers (not used yet)
 MESH_LEVELS = {
@@ -69,9 +135,11 @@ def w(path: str, text: str, executable: bool = False) -> None:
 
 # ----------------------------------------------------------------- blockMesh
 
-def block_mesh_dict(H: float) -> str:
-    X, Y, Z = X_SPLITS, Y_SPLITS, [0.0, H]
-    nz = max(4, round(H / BASE_CELL))
+def block_mesh_dict(dom: DomainSpec) -> str:
+    H = dom.H
+    X, Y, Z = dom.x_splits, dom.y_splits, [0.0, H]
+    NX, NY = dom.nx, dom.ny
+    nz = max(4, round(H / dom.base_cell))
 
     def v(i, j, k):
         return i + 4 * j + 16 * k
@@ -138,7 +206,7 @@ mergePatchPairs
 
 # ----------------------------------------------------------------- snappyHexMesh
 
-def snappy_dict(H: float, level: dict, flavour: str, region: str, n_layers: int = 4) -> str:
+def snappy_dict(dom: DomainSpec, level: dict, flavour: str, region: str, n_layers: int = 4) -> str:
     """Per-region snappyHexMesh dictionary. The heat sink surface is a wall patch in both
     regions; the fluid mesh gets prism layers on it; the two region meshes are coupled
     afterwards with createNonConformalCouples (OpenFOAM-14 hotWire tutorial pattern)."""
@@ -152,13 +220,14 @@ def snappy_dict(H: float, level: dict, flavour: str, region: str, n_layers: int 
                "    minDeterminant 0.001;\n    minFaceWeight 0.02;\n    minVolRatio 0.01;\n    minTriangleTwist -1;\n"
                "    nSmoothScale 4;\n    errorReduction 0.75;\n    relaxed\n    {\n        maxNonOrtho 75;\n    }\n}")
     include = '#includeEtc "caseDicts/mesh/generation/snappyHexMeshDict.cfg"' if flavour == "org" else ""
+    H, L, W = dom.H, dom.L, dom.W
     hmid = H / 2 + 0.0004          # off the background cell faces
     if region == "fluid":
-        inside = f"(-0.0305 0.0305 {hmid:.4f})"
+        inside = f"({dom.x_in / 2 - 0.0005:.4f} {W / 2 + 0.0005:.4f} {hmid:.4f})"
         add_layers = "true" if n_layers > 0 else "false"
         layers = f"        heatsink\n        {{\n            nSurfaceLayers {n_layers};\n        }}"
     else:
-        inside = "(0.0305 0.0305 0.0021)"
+        inside = f"({L / 2 + 0.0005:.4f} {W / 2 + 0.0005:.4f} {dom.base_t / 2 + 0.0001:.4f})"
         add_layers = "false"
         layers = ""
     return hdr("dictionary", "snappyHexMeshDict", f"system/{region}") + f"""
@@ -178,14 +247,14 @@ geometry
     refinementBox
     {{
         type box;
-        min (-0.012 -0.001 -0.001);
-        max ( 0.085  0.061  {H + 0.001:.4f});
+        min ({-0.2 * L:.6g} -0.001 -0.001);
+        max ( {L + max(0.025, 0.4 * L):.6g}  {W + 0.001:.6g}  {H + 0.001:.4f});
     }}
     pinBox
     {{
         type box;
-        min (-0.003 -0.001 0.003);
-        max ( 0.066  0.061  {H + 0.001:.4f});
+        min (-0.003 -0.001 {dom.base_t - 0.001:.6g});
+        max ( {L + 0.006:.6g}  {W + 0.001:.6g}  {H + 0.001:.4f});
     }}
 }};
 
@@ -304,7 +373,7 @@ boundaryField
 """
 
 
-def fluid_fields(V: float, k_in: float, omega_in: float, mixing_length: float) -> dict:
+def fluid_fields(V: float, k_in: float, omega_in: float, mixing_length: float, T_in: float = T_IN) -> dict:
     sct = '    #includeEtc "caseDicts/setConstraintTypes"'
     return {
         "U": field("volVectorField", "U", "[0 1 -1 0 0 0 0]", f"uniform ({V} 0 0)", f"""
@@ -313,11 +382,11 @@ def fluid_fields(V: float, k_in: float, omega_in: float, mixing_length: float) -
     inlet           {{ type fixedValue; value uniform ({V} 0 0); }}
     outlet          {{ type pressureInletOutletVelocity; value uniform (0 0 0); }}
 {sct}""", "fluid"),
-        "T": field("volScalarField", "T", "[0 0 0 1 0 0 0]", f"uniform {T_IN}", f"""
+        "T": field("volScalarField", "T", "[0 0 0 1 0 0 0]", f"uniform {T_in}", f"""
     ".*"            {{ type zeroGradient; }}
-    inlet           {{ type fixedValue; value uniform {T_IN}; }}
-    outlet          {{ type inletOutlet; inletValue uniform {T_IN}; value uniform {T_IN}; }}
-    interface_on_heatsink {{ type coupledTemperature; value uniform {T_IN}; }}
+    inlet           {{ type fixedValue; value uniform {T_in}; }}
+    outlet          {{ type inletOutlet; inletValue uniform {T_in}; value uniform {T_in}; }}
+    interface_on_heatsink {{ type coupledTemperature; value uniform {T_in}; }}
 {sct}""", "fluid"),
         "p": field("volScalarField", "p", "[1 -1 -2 0 0 0 0]", f"uniform {P_REF:g}", f"""
     ".*"            {{ type fixedFluxPressure; value $internalField; }}
@@ -352,12 +421,12 @@ def fluid_fields(V: float, k_in: float, omega_in: float, mixing_length: float) -
     }
 
 
-def solid_T(q_flux: float) -> str:
-    grad = q_flux / KAPPA_AL
-    return field("volScalarField", "T", "[0 0 0 1 0 0 0]", f"uniform {T_IN + 20}", f"""
+def solid_T(q_flux: float, kappa: float = KAPPA_AL, T_in: float = T_IN) -> str:
+    grad = q_flux / kappa
+    return field("volScalarField", "T", "[0 0 0 1 0 0 0]", f"uniform {T_in + 20}", f"""
     ".*"            {{ type zeroGradient; }}
     chip            {{ type fixedGradient; gradient uniform {grad:.6g}; }}
-    interface_on_heatsink {{ type coupledTemperature; value uniform {T_IN + 20}; }}
+    interface_on_heatsink {{ type coupledTemperature; value uniform {T_in + 20}; }}
     #includeEtc "caseDicts/setConstraintTypes"
 """, "solid")
 
@@ -395,7 +464,11 @@ mixture
 }
 """
 
-AL_PROPS = f"""
+def solid_props(kappa: float = KAPPA_AL, rho: float = RHO_AL) -> str:
+    return AL_PROPS_TEMPLATE.format(kappa=f"{kappa:g}", rho=f"{rho:g}")
+
+
+AL_PROPS_TEMPLATE = """
 thermoType
 {{
     type            heSolidThermo;
@@ -415,7 +488,7 @@ mixture
     }}
     transport
     {{
-        kappa       {KAPPA_AL:g};
+        kappa       {kappa};
     }}
     thermodynamics
     {{
@@ -424,7 +497,7 @@ mixture
     }}
     equationOfState
     {{
-        rho         2700;
+        rho         {rho};
     }}
 }}
 """
@@ -692,32 +765,22 @@ rm -rf processor*
 """
 
 
-def write_case(spec: HeatSinkSpec, V: float, mesh: str, out: str, n_proc: int = 6,
-               n_iter: int = 1500, flavour: str = "org", n_layers: int = 4) -> dict:
-    is_plate = isinstance(spec, PlateFinSpec)
-    meta = platefin_metadata(spec) if is_plate else metadata(spec)
-    H = (spec.base_t + spec.h) * 1e-3
-    level = MESH_LEVELS[mesh]
-    os.makedirs(out, exist_ok=True)
-    geom_dir = os.path.join(out, "geometry")
-    (export_platefin if is_plate else export_all)(spec, geom_dir)
-    os.makedirs(os.path.join(out, "constant", "geometry"), exist_ok=True)
-    shutil.copy(os.path.join(geom_dir, "heatsink_snappy.stl"), os.path.join(out, "constant", "geometry", "heatsink.stl"))
-    if flavour == "esi":   # v1912 looks in constant/triSurface
-        os.makedirs(os.path.join(out, "constant", "triSurface"), exist_ok=True)
-        shutil.copy(os.path.join(geom_dir, "heatsink_snappy.stl"), os.path.join(out, "constant", "triSurface", "heatsink.stl"))
-
+def _write_case_files(dom: DomainSpec, V: float, level: dict, out: str, n_proc: int, n_iter: int,
+                      flavour: str, n_layers: int, mesh: str) -> dict:
+    """Write every OpenFOAM dictionary for the domain. The caller has already put the sink STL in place.
+    Returns the quantities derived from the domain for case.json."""
+    H = dom.H
     # inlet turbulence: 5 % intensity, mixing length 7 % of the duct hydraulic diameter
-    A = 0.060 * H
-    Dh = 4 * A / (2 * (0.060 + H))
+    A = dom.W * H
+    Dh = 4 * A / (2 * (dom.W + H))
     k_in = 1.5 * (0.05 * V) ** 2
     L_mix = 0.07 * Dh
     omega_in = math.sqrt(k_in) / (0.09 ** 0.25 * L_mix)
-    q_flux = Q_CHIP / 0.03 ** 2
+    q_flux = dom.power_W / dom.chip_area
 
     for region in ("fluid", "solid"):
-        w(os.path.join(out, "system", region, "blockMeshDict"), block_mesh_dict(H))
-        w(os.path.join(out, "system", region, "snappyHexMeshDict"), snappy_dict(H, level, flavour, region, n_layers))
+        w(os.path.join(out, "system", region, "blockMeshDict"), block_mesh_dict(dom))
+        w(os.path.join(out, "system", region, "snappyHexMeshDict"), snappy_dict(dom, level, flavour, region, n_layers))
     w(os.path.join(out, "system", "createNonConformalCouplesDict"), hdr("dictionary", "createNonConformalCouplesDict") + NCC_DICT)
     w(os.path.join(out, "system", "meshQualityDict"), hdr("dictionary", "meshQualityDict") +
       '\n#includeEtc "caseDicts/mesh/generation/meshQualityDict.cfg"\n')
@@ -744,23 +807,85 @@ def write_case(spec: HeatSinkSpec, V: float, mesh: str, out: str, n_proc: int = 
       "\ndimensions      [0 1 -2 0 0 0 0];\nvalue           (0 0 0);\n")
     w(os.path.join(out, "constant", "fluid", "pRef"), hdr("uniformDimensionedScalarField", "pRef", "constant/fluid") +
       f"\ndimensions      [1 -1 -2 0 0 0 0];\nvalue           {P_REF:g};\n")
-    w(os.path.join(out, "constant", "solid", "physicalProperties"), hdr("dictionary", "physicalProperties", "constant/solid") + AL_PROPS)
+    w(os.path.join(out, "constant", "solid", "physicalProperties"), hdr("dictionary", "physicalProperties", "constant/solid") +
+      solid_props(dom.kappa_solid, dom.rho_solid))
 
-    for name, text in fluid_fields(V, k_in, omega_in, L_mix).items():
+    for name, text in fluid_fields(V, k_in, omega_in, L_mix, dom.T_in_K).items():
         w(os.path.join(out, "0", "fluid", name), text)
-    w(os.path.join(out, "0", "solid", "T"), solid_T(q_flux))
+    w(os.path.join(out, "0", "solid", "T"), solid_T(q_flux, dom.kappa_solid, dom.T_in_K))
 
     w(os.path.join(out, "Allmesh"), allmesh(flavour), executable=True)
     w(os.path.join(out, "Allrun"), allrun(n_proc), executable=True)
+    return {"duct_height_m": H, "q_flux_W_m2": q_flux, "k_in": k_in, "omega_in": omega_in}
+
+
+def _place_stl(src_stl: str, out: str, flavour: str) -> None:
+    os.makedirs(os.path.join(out, "constant", "geometry"), exist_ok=True)
+    shutil.copy(src_stl, os.path.join(out, "constant", "geometry", "heatsink.stl"))
+    if flavour == "esi":   # v1912 looks in constant/triSurface
+        os.makedirs(os.path.join(out, "constant", "triSurface"), exist_ok=True)
+        shutil.copy(src_stl, os.path.join(out, "constant", "triSurface", "heatsink.stl"))
+
+
+def write_case(spec: HeatSinkSpec, V: float, mesh: str, out: str, n_proc: int = 6,
+               n_iter: int = 1500, flavour: str = "org", n_layers: int = 4) -> dict:
+    """Parametric designs (pin and plate arrays), exactly as in the study."""
+    is_plate = isinstance(spec, PlateFinSpec)
+    meta = platefin_metadata(spec) if is_plate else metadata(spec)
+    dom = domain_for_spec(spec)
+    level = MESH_LEVELS[mesh]
+    os.makedirs(out, exist_ok=True)
+    geom_dir = os.path.join(out, "geometry")
+    (export_platefin if is_plate else export_all)(spec, geom_dir)
+    _place_stl(os.path.join(geom_dir, "heatsink_snappy.stl"), out, flavour)
+    derived = _write_case_files(dom, V, level, out, n_proc, n_iter, flavour, n_layers, mesh)
 
     pred = None if is_plate else analytic_solve(meta, V)
     case_meta = {
         "spec": {**meta["spec"], "layout": spec.layout}, "name": spec.name, "V": V, "mesh": mesh, "n_proc": n_proc,
-        "n_iter": n_iter, "flavour": flavour, "n_layers": n_layers, "duct_height_m": H, "q_flux_W_m2": q_flux,
-        "k_in": k_in, "omega_in": omega_in, "n_pins": meta.get("n_pins", meta.get("n_fins")),
+        "n_iter": n_iter, "flavour": flavour, "n_layers": n_layers, "duct_height_m": derived["duct_height_m"],
+        "q_flux_W_m2": derived["q_flux_W_m2"],
+        "k_in": derived["k_in"], "omega_in": derived["omega_in"], "n_pins": meta.get("n_pins", meta.get("n_fins")),
         "n_rows": meta.get("n_rows"), "fin_mass_g": meta["fin_mass_g"], "kind": "plate" if is_plate else "pin",
         "analytic": {k: pred[k] for k in ("R_total_K_W", "R_conv_K_W", "R_base_K_W", "dP_Pa",
                                            "T_chip_max_C", "Re_max", "h_W_m2K", "eta_fin")} if pred else {},
+    }
+    with open(os.path.join(out, "case.json"), "w") as f:
+        json.dump(case_meta, f, indent=2)
+    return case_meta
+
+
+def cad_mesh_level(min_feature_mm: float, mesh: str, base_cell: float = BASE_CELL, surf_override: int | None = None) -> dict:
+    """Surface refinement for an imported sink: the coarse level puts about 2.5 cells across the thinnest
+    feature (3 mm background cell, 2 mm pin -> level 2 = 0.75 mm cells; 1.5 mm plate -> level 3). Medium is
+    one level finer and fine two (as in MESH_LEVELS); box levels follow the study's table."""
+    cell_mm = base_cell * 1e3
+    base = max(2, min(4, math.ceil(math.log2(cell_mm / (min_feature_mm / 2.5)))))
+    if surf_override is not None:
+        base = surf_override
+    offs = {"coarse": 0, "medium": 1, "fine": 2}[mesh]
+    return {**MESH_LEVELS[mesh], "surf": base + offs}
+
+
+def write_case_from_model(model, dom: DomainSpec, V: float, mesh: str, out: str, n_proc: int = 6,
+                          n_iter: int = 1500, flavour: str = "org", n_layers: int = 4,
+                          surf_level: int | None = None) -> dict:
+    """An imported heat sink (src.cad_import.SinkModel): its embedded STL is used as is."""
+    level = cad_mesh_level(model.min_feature_mm, mesh, dom.base_cell, surf_level)
+    os.makedirs(out, exist_ok=True)
+    _place_stl(model.snappy_stl, out, flavour)
+    derived = _write_case_files(dom, V, level, out, n_proc, n_iter, flavour, n_layers, mesh)
+    stem = os.path.splitext(os.path.basename(model.source))[0]
+    case_meta = {
+        "spec": {"source": model.source}, "name": stem, "V": V, "mesh": mesh, "n_proc": n_proc, "n_iter": n_iter,
+        "flavour": flavour, "n_layers": n_layers, "duct_height_m": derived["duct_height_m"],
+        "q_flux_W_m2": derived["q_flux_W_m2"], "k_in": derived["k_in"], "omega_in": derived["omega_in"],
+        "n_pins": model.n_fins, "n_rows": None, "kind": "cad", "analytic": {},
+        "fin_mass_g": model.fin_volume_mm3 * dom.rho_solid * 1e-6,
+        "surf_level": level["surf"], "power_W": dom.power_W, "T_in_K": dom.T_in_K,
+        "kappa_solid": dom.kappa_solid, "rho_solid": dom.rho_solid,
+        "chip_m": [dom.chip_x0, dom.chip_y0, dom.chip_x1, dom.chip_y1], "tip_gap_mm": model.tip_gap_mm,
+        "model": model.to_dict(),
     }
     with open(os.path.join(out, "case.json"), "w") as f:
         json.dump(case_meta, f, indent=2)
