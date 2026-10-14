@@ -127,13 +127,15 @@ def parse_case(case: str) -> dict:
 
     q_chip = res.get("Q_solid_chip_W")
     res["Q_chip_W"] = q_chip
-    q_used = abs(q_chip) if q_chip else Q_NOMINAL
+    meta = res.get("meta", {})
+    t_in = meta.get("T_in_K", T_IN)      # imported-CAD cases may use another power or inlet temperature
+    q_used = abs(q_chip) if q_chip else meta.get("power_W", Q_NOMINAL)
     if res["T_solid_max_K"] is not None:
-        res["R_max_K_W"] = (res["T_solid_max_K"] - T_IN) / q_used
+        res["R_max_K_W"] = (res["T_solid_max_K"] - t_in) / q_used
     if res["T_chip_avg_K"] is not None:
-        res["R_chip_avg_K_W"] = (res["T_chip_avg_K"] - T_IN) / q_used
+        res["R_chip_avg_K_W"] = (res["T_chip_avg_K"] - t_in) / q_used
     if res["T_out_K"] is not None and res["m_dot_in_kg_s"]:
-        res["Q_energy_balance_W"] = res["m_dot_in_kg_s"] * 1006.0 * (res["T_out_K"] - T_IN)
+        res["Q_energy_balance_W"] = res["m_dot_in_kg_s"] * 1006.0 * (res["T_out_K"] - t_in)
     # Heat leaving the solid through the fluid/solid interface: the primary energy check. The air-side balance above
     # uses the area-averaged (not flux-weighted) outlet temperature and therefore over-estimates by ~8 %.
     qi = res.get("Q_fluid_interface_on_heatsink_W")
