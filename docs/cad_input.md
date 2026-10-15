@@ -68,3 +68,28 @@ Exit codes: 0 ok, 2 input refused (the message says why), 3 meshing failed (see 
   other shapes.
 - Not supported: several bodies, fins on both sides of the base, ducts that are not rectangular, flow around the sink instead of
   through a shroud, radiation, temperature-dependent conductivity, multiple chips.
+
+## Demo on a file the tool had never seen
+
+`Heatsink_125x35x50mm_3xFixationM3.step` from the KiCad 3D-model library (`Heatsink.3dshapes` in
+github.com/KiCad/kicad-packages3D, licence CC-BY-SA 4.0 with the library's design exception; credit to the KiCad library contributors;
+the file is not redistributed here). It is an extruded aluminium sink, 35 mm along the flow, 124.7 mm across, 5 mm base, 11 round-tipped
+fins 30 mm tall and 2.96 mm thick, with three mounting holes in the base, a shape the study never used. The importer found the
+orientation, units, base thickness and fins on its own; a 30 x 30 mm, 100 W chip at the base centre, 4 m/s, coarse mesh, 600 iterations on
+OpenFOAM 14 (`results/cad/foreign_kicad/`):
+
+| quantity | value |
+|---|---|
+| thermal resistance R (hottest solid point to inlet) | 0.594 K/W (hottest solid 357.8 K) |
+| pressure drop | 23.2 Pa |
+| fin mass (aluminium) | 92.3 g |
+| mesh | 368k fluid / 111k solid cells, surface level 2 |
+| chip heat in / through the interface | 100.36 W / 100.36 W (balance 0.002 %) |
+| run time | 7.2 min |
+
+Caveats, all reported by the tool or the logs:
+- The fin tips are rounded, so they were squared off to touch the shroud (warning in the output); a small sliver of metal is added.
+- The fluid mesh passes checkMesh; the solid mesh has one highly skewed face (skewness 8.1) out of 111k cells, so its checkMesh flag is false.
+- No hand calculation or measurement exists for this part, so the numbers have not been checked against anything. All final residuals
+  were below 1e-3 (p 5.4e-4, Uy 7.9e-4), but no residualControl was applied.
+- The duct, shroud and chip are the tool's assumptions (rectangular duct, one chip, tips touching the top wall), not the KiCad part's data sheet.

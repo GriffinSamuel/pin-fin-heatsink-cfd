@@ -1,0 +1,179 @@
+{
+  "case": "/home/griff/heatsink-cfd/results/cad/foreign_kicad/Heatsink_125x35x50mm_3xFixationM3_V4_coarse",
+  "meta": {
+    "spec": {
+      "source": "/home/griff/heatsink-cfd/work/foreign/Heatsink_125x35x50mm_3xFixationM3.step"
+    },
+    "name": "Heatsink_125x35x50mm_3xFixationM3",
+    "V": 4.0,
+    "mesh": "coarse",
+    "n_proc": 8,
+    "n_iter": 600,
+    "flavour": "org",
+    "n_layers": 4,
+    "duct_height_m": 0.034992671012878424,
+    "q_flux_W_m2": 111111.1111111111,
+    "k_in": 0.06000000000000001,
+    "omega_in": 116.89370549126242,
+    "n_pins": 11,
+    "n_rows": null,
+    "kind": "cad",
+    "analytic": {},
+    "fin_mass_g": 92.3477490438706,
+    "surf_level": 2,
+    "power_W": 100.0,
+    "T_in_K": 298.15,
+    "kappa_solid": 200.0,
+    "rho_solid": 2700.0,
+    "chip_m": [
+      0.0025,
+      0.04737442970275879,
+      0.0325,
+      0.07737442970275879
+    ],
+    "tip_gap_mm": 0.0,
+    "model": {
+      "source": "/home/griff/heatsink-cfd/work/foreign/Heatsink_125x35x50mm_3xFixationM3.step",
+      "units_in": "mm",
+      "transform": [
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          1.0,
+          0.0,
+          0.0,
+          62.5
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          2.5399999618530273
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "L": 35.0,
+      "W": 124.74885940551758,
+      "base_t": 5.0012694824218755,
+      "h": 29.991401530456542,
+      "min_feature_mm": 2.963021150871043,
+      "min_thickness_mm": 2.963021150871043,
+      "min_gap_mm": 9.035498883176468,
+      "volume_mm3": 55195.342170308075,
+      "fin_volume_mm3": 34202.87001624837,
+      "wetted_area_mm2": 25542.47597023578,
+      "n_fins": 11,
+      "clean_stl": "results/cad/foreign_kicad/Heatsink_125x35x50mm_3xFixationM3_import/Heatsink_125x35x50mm_3xFixationM3_clean.stl",
+      "snappy_stl": "results/cad/foreign_kicad/Heatsink_125x35x50mm_3xFixationM3_import/Heatsink_125x35x50mm_3xFixationM3_snappy.stl",
+      "tip_gap_mm": 0.0,
+      "warnings": [
+        "fin tips are rounded or pointed; the fin section 0.4 mm below each tip was extended up to the shroud, which adds a small sliver of metal at the tips"
+      ]
+    }
+  },
+  "T_solid_max_K": 357.78349,
+  "T_solid_min_K": 321.524034,
+  "T_fluid_max_K": 354.231696,
+  "T_chip_avg_K": 354.895218,
+  "T_out_K": 303.471974,
+  "T_in_K": 298.15,
+  "p_in_Pa": 100023.205,
+  "p_out_Pa": 99999.994,
+  "dP_Pa": 23.210999999995693,
+  "m_dot_in_kg_s": 0.0203997361,
+  "m_dot_out_kg_s": 0.0203997284,
+  "Q_solid_top_W": 0.0,
+  "Q_solid_floor_W": 0.0,
+  "Q_solid_chip_W": 100.362128,
+  "Q_solid_heatsink_W": 0.0,
+  "Q_solid_interface_on_heatsink_W": -100.362127,
+  "Q_fluid_top_W": 0.0,
+  "Q_fluid_floor_W": 0.0,
+  "Q_fluid_heatsink_W": 0.0,
+  "Q_fluid_interface_on_heatsink_W": 100.360106,
+  "Q_chip_W": 100.362128,
+  "R_max_K_W": 0.5941831962749933,
+  "R_chip_avg_K_W": 0.5654046912994912,
+  "Q_energy_balance_W": 109.21826632184799,
+  "Q_interface_W": 100.360106,
+  "interface_balance_err_pct": -0.0020147041920002312,
+  "residuals_fluid": {
+    "p": 0.000539594508,
+    "Ux": 0.000127399761,
+    "Uy": 0.000789690339,
+    "Uz": 0.000349125681,
+    "h": 8.91727291e-05,
+    "k": 0.00015775931,
+    "omega": 1.91101176e-05
+  },
+  "residuals_solid": {
+    "e": 9.80616996e-06
+  },
+  "iterations": 600,
+  "solver_time_s": 332.19177,
+  "converged_by_residualControl": false,
+  "cells_fluid": 367838,
+  "mesh_ok_fluid": true,
+  "cells_solid": 111358,
+  "mesh_ok_solid": false,
+  "status": "ok",
+  "fail_reason": "",
+  "wall_s": 434.27862429618835,
+  "name": "Heatsink_125x35x50mm_3xFixationM3_V4_coarse",
+  "model": {
+    "source": "/home/griff/heatsink-cfd/work/foreign/Heatsink_125x35x50mm_3xFixationM3.step",
+    "units_in": "mm",
+    "transform": [
+      [
+        0.0,
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        1.0,
+        0.0,
+        0.0,
+        62.5
+      ],
+      [
+        0.0,
+        1.0,
+        0.0,
+        2.5399999618530273
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    "L": 35.0,
+    "W": 124.74885940551758,
+    "base_t": 5.0012694824218755,
+    "h": 29.991401530456542,
+    "min_feature_mm": 2.963021150871043,
+    "min_thickness_mm": 2.963021150871043,
+    "min_gap_mm": 9.035498883176468,
+    "volume_mm3": 55195.342170308075,
+    "fin_volume_mm3": 34202.87001624837,
+    "wetted_area_mm2": 25542.47597023578,
+    "n_fins": 11,
+    "clean_stl": "results/cad/foreign_kicad/Heatsink_125x35x50mm_3xFixationM3_import/Heatsink_125x35x50mm_3xFixationM3_clean.stl",
+    "snappy_stl": "results/cad/foreign_kicad/Heatsink_125x35x50mm_3xFixationM3_import/Heatsink_125x35x50mm_3xFixationM3_snappy.stl",
+    "tip_gap_mm": 0.0,
+    "warnings": [
+      "fin tips are rounded or pointed; the fin section 0.4 mm below each tip was extended up to the shroud, which adds a small sliver of metal at the tips"
+    ]
+  }
+}

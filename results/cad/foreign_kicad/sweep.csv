@@ -1,0 +1,2 @@
+name,file,V,mesh,status,n_fins,fin_mass_g,R_max_K_W,T_solid_max_K,dP_Pa,Q_chip_W,interface_balance_err_pct,cells_fluid,cells_solid,iterations,wall_s,warnings
+Heatsink_125x35x50mm_3xFixationM3_V4_coarse,Heatsink_125x35x50mm_3xFixationM3.step,4.0,coarse,ok,11,92.3477490438706,0.5941831962749933,357.78349,23.210999999995693,100.362128,-0.0020147041920002312,367838,111358,600,434.27862429618835,"fin tips are rounded or pointed; the fin section 0.4 mm below each tip was extended up to the shroud, which adds a small sliver of metal at the tips"
