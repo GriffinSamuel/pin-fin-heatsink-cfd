@@ -35,15 +35,18 @@ need only Python.
 The part is exported to a clean STL (`<stem>_clean.stl`, mm) and a second STL for snappyHexMesh (`<stem>_snappy.stl`, metres).
 The second is the sink extended 1 mm below the floor, 1 mm past the side walls and 1 mm above the shroud, so that no STL face
 lies on a boundary of the background mesh (the same embedding the study's own geometry uses). If the fin tips are not flat
-(pointed pins, say), the 1 mm extension is impossible; the tool then leaves a 0.3 mm gap between tip and shroud and warns.
-That gap lets air bypass the fins, so such results are lower in pressure drop than a sealed shroud would give.
+(rounded or pointed), the 1 mm extension is impossible. By default the fin section 0.4 mm below the tip is extended up to the shroud
+("squared off"), which adds a small sliver of metal at each tip and is reported as a warning. `--tip-mode gap` leaves a 0.3 mm gap
+between tip and shroud instead; that gap meshed badly on a rounded-tip sink (1,396 highly skewed cells) and lets air bypass the fins.
 
 ## Mesh level
 
 The surface refinement is chosen from the thinnest fin so that about 2.5 cells span it at the coarse level
-(`level = clamp(ceil(log2(cell / (min_feature / 2.5))), 2, 4)`, cell = 3 mm). The study's 2 mm pins and 1.5 mm plates get levels 2 and 3.
-`--mesh medium` adds one level and `fine` two. `--surf-level N` overrides. The importer prints a warning at level 4 because the
-mesh becomes large.
+(`level = clamp(ceil(log2(cell / (min_feature / 2.5))), 2, 4)`, cell = 3 mm). The study's 2 mm pins get level 2 and a 1.5 mm
+plate gets level 3. The study itself ran its plate-fin design at level 2, so to reproduce it use `--surf-level 2`.
+`--mesh medium` adds one level and `fine` two. The importer prints a warning at level 4 because the mesh becomes large.
+The level matters: the same plate sink at level 3 (2.07 M fluid cells, 38 min) gave R 2.3 % and dP 6.2 % higher than at level 2
+(0.49 M cells, 8 min), which is the study's own mesh-sensitivity problem showing up again.
 
 ## Outputs
 
@@ -59,7 +62,9 @@ Exit codes: 0 ok, 2 input refused (the message says why), 3 meshing failed (see 
 - Everything in the study's limitations still holds: the mesh-independence criterion was not met, no case met its residual
   criterion, the air-side energy balance reads 7 to 9 % high, and nothing was compared with measurements.
 - The only check of the new path is a back-to-back comparison: the study's centre pin design and its plate-fin design, exported
-  as STEP files and run through this path, against the study's own results (see the acceptance record in PROGRESS.md, T12).
-  That shows the path reproduces the study for those two shapes; it does not validate other shapes.
+  as STEP files and run through this path on OpenFOAM 14, against the study's own results (4 m/s, coarse, 600 iterations):
+  centre design R 0.3872 vs 0.3872 K/W, dP 143.01 vs 142.98 Pa (same cells, 424k fluid / 64k solid); plate fin at `--surf-level 2`
+  R 0.3790 vs 0.3790, dP 28.86 vs 28.86 Pa. That shows the path reproduces the study for those two shapes; it does not validate
+  other shapes.
 - Not supported: several bodies, fins on both sides of the base, ducts that are not rectangular, flow around the sink instead of
   through a shroud, radiation, temperature-dependent conductivity, multiple chips.

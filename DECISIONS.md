@@ -73,11 +73,14 @@ case is converged to 0.03 K by 400 iterations). PLAN.md's "2 cases at a time" wa
 stays reproducible byte for byte (tests/test_make_case_golden.py compares system/, 0/ and constant/ with dictionaries written by the
 pre-refactor code). The importer is a second way into the same templates.
 
-## D14 (2026-10-14) Tip gap fallback
-snappyHexMesh needs the sink STL to cross every boundary of the background mesh. Flat fin tips can be extended 1 mm through the shroud; pointed or
-domed tips cannot (a tip triangle area under half the fin cross-section). Then a 0.3 mm gap is left under the shroud and the importer warns. The alternative
-(refusing) would turn away common shapes; the gap lets some air bypass and lowers dP, which the warning says.
+## D14 (2026-10-14) Rounded or pointed fin tips are squared off, not left short
+snappyHexMesh needs the sink STL to cross every boundary of the background mesh. Flat fin tips are extended 1 mm through the shroud;
+rounded or pointed tips cannot be. The first fallback, a 0.3 mm gap under the shroud, gave 1,396 highly skewed fluid cells on a real
+rounded-tip sink (KiCad 125 x 35 mm extrusion). The default is now to extend the fin section 0.4 mm below each tip up to the shroud, which
+meshes cleanly and matches the study's tips-touch-the-shroud set-up at the price of a small sliver of added metal, reported as a warning.
+`--tip-mode gap` keeps the old behaviour. If the squared-off STL is not watertight after the float32 STL export, the gap is used instead.
 
 ## D15 (2026-10-14) Surface refinement from the thinnest feature
-The study set level 2 by hand for 2 mm pins and 3 for 1.5 mm plates. The rule `ceil(log2(cell / (min_feature / 2.5)))`, clamped to 2..4, gives those two values
-and scales to other shapes; it is a heuristic with the same unproven mesh independence as the study.
+The study set level 2 by hand for 2 mm pins and for 1.5 mm plates. The rule `ceil(log2(cell / (min_feature / 2.5)))`, clamped to 2..4, gives 2 for the
+pins and 3 for the plates. At level 3 the plate-fin result moved (R +2.3 %, dP +6.2 %, 2.07 M cells), so the acceptance comparison used `--surf-level 2`
+to match the study. The rule is a heuristic with the same unproven mesh independence as the study; the importer does not claim more.
